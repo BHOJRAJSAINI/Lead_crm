@@ -81,15 +81,17 @@ export async function loginUser(email: string, password: string, ip: string) {
     return { success: false, code: 'RATE_LIMITED', message: 'Too many attempts. Try again in 15 minutes.' };
   }
   const sb = supabaseAdmin();
-  const { data: user } = await sb.from('profiles')
-    .select('id, email, name, role, password_hash, must_reset_password, failed_attempts, locked_until')
-    .eq('email', email)
-    .maybeSingle();
+  const USER_COLS = 'id, email, name, role, password_hash, must_reset_password, failed_attempts, locked_until';
+  let { data: user } = await sb.from('profiles').select(USER_COLS).eq('email', email).maybeSingle();
 
-  // First-run convenience: if no users exist yet, seed demo users (must_reset_password = true).
+  // First-run convenience: if no users exist yet, seed demo users (must_reset_password = true),
+  // then re-read so the very first login attempt works.
   if (!user) {
     const { count } = await sb.from('profiles').select('id', { count: 'exact', head: true });
-    if (!count) await seedDemoUsers();
+    if (!count) {
+      await seedDemoUsers();
+      ({ data: user } = await sb.from('profiles').select(USER_COLS).eq('email', email).maybeSingle());
+    }
   }
 
   if (!user || !user.password_hash) {
@@ -142,13 +144,14 @@ export async function logout(req: NextRequest) {
 async function seedDemoUsers() {
   const sb = supabaseAdmin();
   for (const u of (await import('./env')).DEV_SEED_USERS) {
-    await sb.from('profiles').upsert({
+    const { error } = await sb.from('profiles').upsert({
       email: u.email,
       name: u.name,
       role: u.role,
       password_hash: await bcrypt.hash(u.password, 10),
       must_reset_password: true,
     }, { onConflict: 'email' });
+    if (error) console.error('seedDemoUsers failed (check SUPABASE_SERVICE_ROLE_KEY is the service_role key):', error.message);
   }
 }
 

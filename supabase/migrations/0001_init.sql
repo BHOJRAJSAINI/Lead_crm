@@ -93,8 +93,7 @@ create table if not exists public.location_pings (
 );
 create index if not exists idx_pings_email_time on public.location_pings (user_email, received_at desc);
 create index if not exists idx_pings_received on public.location_pings (received_at);
-create index if not exists idx_pings_cleanup on public.location_pings (received_at)
-  where received_at < now() - interval '30 days';
+-- (cleanup of pings older than 30 days is done by a plain delete on idx_pings_received; a partial index on now() is not allowed)
 
 -- ---------- sync outbox / log / state ----------
 create table if not exists public.sheet_outbox (

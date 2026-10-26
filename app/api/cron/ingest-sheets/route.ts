@@ -37,6 +37,79 @@ function fmtDate(val: any): string {
   return isNaN(d.getTime()) ? s : d.toISOString().slice(0, 10);
 }
 
+
+// ---------- Lead FollowUps (Sheet -> DB) ----------
+const FU_SHEET = 'Lead FollowUps';
+const FU_MAX_PER_RUN = 1500;   // catch-up in chunks so a run never times out
+const pad2 = (n: number) => (n < 10 ? '0' : '') + n;
+
+function serialToUtc(n: number): Date { return new Date(Math.round((n - 25569) * 86400 * 1000)); }
+
+function normDate(v: any): string {
+  if (v === null || v === undefined || v === '') return '';
+  if (typeof v === 'number') return serialToUtc(v).toISOString().slice(0, 10);
+  const s = String(v).trim();
+  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m) return m[1] + '-' + pad2(+m[2]) + '-' + pad2(+m[3]);
+  m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/); // dd/mm/yyyy (India)
+  if (m) return m[3] + '-' + pad2(+m[2]) + '-' + pad2(+m[1]);
+  return s;
+}
+
+function normTime(v: any): string {
+  if (v === null || v === undefined || v === '') return '';
+  if (typeof v === 'number') {
+    const total = Math.round((v - Math.floor(v)) * 1440);
+    return pad2(Math.floor(total / 60) % 24) + ':' + pad2(total % 60);
+  }
+  const s = String(v).trim();
+  const m = s.match(/(\d{1,2}):(\d{2})(?::\d{2})?\s*([AaPp][Mm])?/);
+  if (!m) return s;
+  let h = +m[1];
+  if (m[3]) { const pm = m[3].toLowerCase() === 'pm'; if (pm && h < 12) h += 12; if (!pm && h === 12) h = 0; }
+  return pad2(h) + ':' + m[2];
+}
+
+function normTimestamp(v: any): string | null {
+  if (typeof v === 'number') return new Date(serialToUtc(v).getTime() - 330 * 60000).toISOString(); // sheet time is IST
+  if (typeof v === 'string' && v.trim()) { const d = new Date(v.trim()); return isNaN(d.getTime()) ? null : d.toISOString(); }
+  return null;
+}
+
+async function ingestFollowUps(sb: any, sheets: any) {
+  const stateKey = 'ingest:' + FU_SHEET + ':last_row';
+  const { data: state } = await sb.from('sheet_sync_state').select('*').eq('key', stateKey).maybeSingle();
+  const lastRow = state ? Number(state.last_row) : 1;
+  const rows: any[][] = await sheets.readRange(FU_SHEET, 'A' + (lastRow + 1) + ':H' + (lastRow + FU_MAX_PER_RUN), true);
+  const batch: any[] = [];
+  let skipped = 0;
+  for (const r of rows) {
+    const leadId = String((r && r[0]) ?? '').trim();
+    if (!leadId) { skipped++; continue; }
+    const rec: any = {
+      lead_id: leadId,
+      follow_date: normDate(r[1]),
+      follow_time: normTime(r[2]),
+      remark: String(r[3] ?? '').trim(),
+      lead_status: String(r[4] ?? '').trim() || 'New',
+      next_follow_date: normDate(r[5]),
+      next_follow_time: normTime(r[6]),
+      created_by: 'sheet-import',
+    };
+    const ts = normTimestamp(r[7]);
+    if (ts) rec.created_at = ts;
+    batch.push(rec);
+  }
+  for (let i = 0; i < batch.length; i += 300) {
+    const { error } = await sb.from('follow_ups').insert(batch.slice(i, i + 300));
+    if (error) throw new Error('follow_ups insert failed: ' + error.message); // cursor not advanced -> retried next run
+  }
+  const newLast = lastRow + rows.length;
+  await sb.from('sheet_sync_state').upsert({ key: stateKey, last_row: newLast, last_run: new Date().toISOString() }, { onConflict: 'key' });
+  await sb.from('sheet_sync_log').insert({ direction: 'sheet->db', table_name: FU_SHEET, ok: true, detail: { inserted: batch.length, skipped, newLast } });
+  return { source: FU_SHEET, inserted: batch.length, skipped, hasMore: rows.length >= FU_MAX_PER_RUN };
+}
+
 export async function GET(req: NextRequest) {
   if (!(await isCronAuthorized(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -98,6 +171,12 @@ export async function GET(req: NextRequest) {
       await sb.from('sheet_sync_log').insert({ direction: 'sheet->db', table_name: src.sheetName, ok: false, error: String(e?.message || e).substring(0, 500) });
       summary.sources.push({ source: src.sheetName, error: String(e?.message || e) });
     }
+  }
+  try {
+    summary.sources.push(await ingestFollowUps(sb, sheets));
+  } catch (e: any) {
+    await sb.from('sheet_sync_log').insert({ direction: 'sheet->db', table_name: FU_SHEET, ok: false, error: String(e?.message || e).substring(0, 500) });
+    summary.sources.push({ source: FU_SHEET, error: String(e?.message || e) });
   }
   return NextResponse.json({ ok: true, ...summary });
 }

@@ -115,8 +115,10 @@ export async function upsertRow(sheetName: string, headers: string[], keyCol: st
   });
 }
 
-export async function readRange(sheetName: string, a1: string): Promise<any[][]> {
-  const res = await sheetsCall('/values/' + encodeURIComponent(sheetName + '!' + a1) + '?majorDimension=ROWS', {});
+export async function readRange(sheetName: string, a1: string, raw = false): Promise<any[][]> {
+  // raw=true returns dates/times as serial numbers (locale-independent) instead of formatted strings.
+  const render = raw ? '&valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=SERIAL_NUMBER' : '';
+  const res = await sheetsCall('/values/' + encodeURIComponent(sheetName + '!' + a1) + '?majorDimension=ROWS' + render, {});
   return res.values || [];
 }
 

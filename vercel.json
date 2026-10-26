@@ -1,5 +1,5 @@
 {
-  "region": "bom1",
+  "regions": ["bom1"],
   "crons": [
     { "path": "/api/cron/sync-sheets", "schedule": "*/2 * * * *" },
     { "path": "/api/cron/ingest-sheets", "schedule": "*/2 * * * *" },

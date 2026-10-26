@@ -12,16 +12,30 @@ function b64url(s: string): string {
 }
 
 function getServiceAccountJson(): any {
-  const raw = (ENV.GOOGLE_SERVICE_ACCOUNT_JSON || '').trim();
+  let raw = (ENV.GOOGLE_SERVICE_ACCOUNT_JSON || '').replace(/^\uFEFF/, '').trim();
   if (!raw) throw new Error('GOOGLE_SERVICE_ACCOUNT_JSON is not set.');
-  // Accept either the raw JSON or its base64 encoding.
-  const text = raw.startsWith('{') ? raw : Buffer.from(raw, 'base64').toString('utf8');
-  let sa: any;
-  try { sa = JSON.parse(text); } catch (_) {
-    throw new Error('GOOGLE_SERVICE_ACCOUNT_JSON is neither valid JSON nor base64-encoded JSON.');
+  // Strip wrapping quotes added by some dashboards / shells.
+  if ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))) raw = raw.slice(1, -1).trim();
+
+  const candidates: string[] = [];
+  if (raw.startsWith('{')) candidates.push(raw);
+  if (raw.startsWith('{\\"')) candidates.push(raw.replace(/\\"/g, '"')); // escaped JSON string
+  const b64 = raw.replace(/\s+/g, '').replace(/-/g, '+').replace(/_/g, '/');
+  try { candidates.push(Buffer.from(b64, 'base64').toString('utf8')); } catch (_) { /* ignore */ }
+
+  for (const text of candidates) {
+    try {
+      const sa = JSON.parse(text);
+      if (sa && sa.client_email && sa.private_key) {
+        sa.private_key = String(sa.private_key).replace(/\\n/g, '\n');
+        return sa;
+      }
+    } catch (_) { /* try next */ }
   }
-  if (typeof sa.private_key === 'string') sa.private_key = sa.private_key.replace(/\\n/g, '\n');
-  return sa;
+  throw new Error(
+    'GOOGLE_SERVICE_ACCOUNT_JSON could not be parsed (length=' + raw.length + ', starts="' + raw.slice(0, 4) +
+    '"). Expected the service-account JSON (starts with {) or its base64 (starts with ey).'
+  );
 }
 
 export async function getAccessToken(): Promise<string> {

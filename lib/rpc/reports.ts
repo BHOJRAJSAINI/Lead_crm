@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { supabaseAdmin } from '../supabase';
+import { supabaseAdmin, fetchAll } from '../supabase';
 import { requireSession, AUTH_EXPIRED, isManagementSession, visibleOwnerNames } from '../auth';
 import { REPORT_PENDING, REPORT_ACTION, REPORT_CONVERTED, REPORT_FULFILLED, REPORT_FAILED, VALID_STATUSES } from '../config';
 import { resolveDateRange, todayKey, shiftDateKey, Range } from '../ist';
@@ -16,7 +16,7 @@ type Enriched = {
 
 async function loadEnriched(s: any): Promise<Enriched[]> {
   const sb = supabaseAdmin();
-  const { data } = await sb.from('lead_current').select('*').order('lead_date', { ascending: false });
+  const { data } = await fetchAll(() => sb.from('lead_current').select('*').order('lead_date', { ascending: false }));
   return (data || []).map((l: any) => ({
     leadId: l.lead_id, customerName: l.customer_name || '', contact: l.contact || '',
     city: l.city || '', clientRequirement: l.client_requirement || '',

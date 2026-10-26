@@ -21,3 +21,16 @@ export function supabaseAdmin(): SupabaseClient {
   }
   return admin;
 }
+
+/** Supabase/PostgREST caps every response at 1000 rows (project "max rows"); page through ALL rows.
+ *  `build` must return a fresh query each call. A stable `id` tiebreaker keeps pages consistent. */
+export async function fetchAll(build: () => any, pageSize = 1000): Promise<{ data: any[]; error: any }> {
+  const out: any[] = [];
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await build().order('id', { ascending: true }).range(from, from + pageSize - 1);
+    if (error) return { data: out, error };
+    if (data && data.length) out.push(...data);
+    if (!data || data.length < pageSize) break;
+  }
+  return { data: out, error: null };
+}

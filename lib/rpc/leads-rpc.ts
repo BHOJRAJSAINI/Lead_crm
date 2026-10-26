@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { supabaseAdmin } from '../supabase';
+import { supabaseAdmin, fetchAll } from '../supabase';
 import { requireSession, Session, AUTH_EXPIRED, visibleOwnerNames } from '../auth';
 import { SPECIAL_EMAILS, VALID_STATUSES, audit } from '../config';
 import { todayKey } from '../ist';
@@ -49,10 +49,12 @@ export async function handleGetLeadsWithFollowUpData(req: NextRequest, args: any
   if (error) return { success: false, code: 'SERVER_ERROR', message: 'Failed to load leads.' };
 
   // filterOptions computed from the FULL scoped set (like GAS), not just the page.
-  let fq = sb.from('lead_current').select('city,lead_source,assigned_name,lead_status');
   const scoped2 = scopeOr(s);
-  if (scoped2) fq = fq.or(scoped2);
-  const { data: fdata } = await fq;
+  const { data: fdata } = await fetchAll(() => {
+    let fq = sb.from('lead_current').select('city,lead_source,assigned_name,lead_status');
+    if (scoped2) fq = fq.or(scoped2);
+    return fq;
+  });
   const cities: Record<string, boolean> = {}, sources: Record<string, boolean> = {}, assignees: Record<string, boolean> = {}, statuses: Record<string, boolean> = {};
   (fdata || []).forEach((l: any) => {
     if (l.city) cities[l.city] = true;
@@ -81,9 +83,9 @@ export async function handleGetFollowUpsData(req: NextRequest, args: any[]) {
   const pageSize = Math.min(200, Math.max(1, Number(o.pageSize) || 25));
 
   // latest follow-up per lead via DISTINCT ON view
-  let latestQ = sb.from('follow_ups').select('lead_id, follow_date, follow_time, remark, lead_status, next_follow_date, next_follow_time, created_at');
-  latestQ = latestQ.order('lead_id').order('follow_date', { ascending: false }).order('follow_time', { ascending: false }).order('created_at', { ascending: false });
-  const { data: allFu } = await latestQ;
+  const { data: allFu } = await fetchAll(() =>
+    sb.from('follow_ups').select('lead_id, follow_date, follow_time, remark, lead_status, next_follow_date, next_follow_time, created_at')
+      .order('lead_id').order('follow_date', { ascending: false }).order('follow_time', { ascending: false }).order('created_at', { ascending: false }));
   const latestByLead = new Map<string, any>();
   (allFu || []).forEach((r: any) => {
     const k = normalizeLeadKey(r.lead_id);
@@ -92,10 +94,12 @@ export async function handleGetFollowUpsData(req: NextRequest, args: any[]) {
   const latestRows = Array.from(latestByLead.values());
 
   // map lead rows for scope + enrichment
-  let leadQ = sb.from('lead_current').select('*');
-  const scoped = scopeOr(s);
-  if (scoped) leadQ = leadQ.or(scoped);
-  const { data: leadRows } = await leadQ;
+  const scopedLeadFilter = scopeOr(s);
+  const { data: leadRows } = await fetchAll(() => {
+    let leadQ = sb.from('lead_current').select('*');
+    if (scopedLeadFilter) leadQ = leadQ.or(scopedLeadFilter);
+    return leadQ;
+  });
   const leadByKey = new Map<string, any>();
   (leadRows || []).forEach((l: any) => {
     leadByKey.set(normalizeLeadKey(l.lead_id), l);
@@ -311,10 +315,12 @@ export async function handleExportLeadsCsv(req: NextRequest, args: any[]) {
   const s = await requireSession(req);
   if (!s) return AUTH_EXPIRED;
   const sb = supabaseAdmin();
-  let q = sb.from('lead_current').select('*');
-  const scoped = scopeOr(s);
-  if (scoped) q = q.or(scoped);
-  const { data, error } = await q;
+  const scopedExport = scopeOr(s);
+  const { data, error } = await fetchAll(() => {
+    let q = sb.from('lead_current').select('*');
+    if (scopedExport) q = q.or(scopedExport);
+    return q;
+  });
   if (error) return { success: false, code: 'SERVER_ERROR', message: 'Failed to export leads.' };
   const { toCsv } = await import('../csv');
   const headers = ['Lead ID', 'Date', 'Customer Name', 'Contact', 'City', 'Client Requirement', 'Detail Requirements', 'Lead Source', 'Assigned Name', 'Lead Status'];

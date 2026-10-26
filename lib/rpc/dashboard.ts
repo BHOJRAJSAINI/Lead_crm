@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { supabaseAdmin } from '../supabase';
+import { supabaseAdmin, fetchAll } from '../supabase';
 import { requireSession, Session, AUTH_EXPIRED, visibleOwnerNames, isAdminSession } from '../auth';
 import { SPECIAL_EMAILS, PENDING_STATUSES, ACTION_REQUIRED_STATUSES, WASTE_STATUSES, HOT_STATUSES, POTENTIAL_STATUSES, VALID_STATUSES } from '../config';
 import { todayKey, shiftDateKey } from '../ist';
@@ -10,10 +10,12 @@ export async function handleGetDashboardData(req: NextRequest, args: any[]) {
   const s = await requireSession(req);
   if (!s) return AUTH_EXPIRED;
   const sb = supabaseAdmin();
-  let q = sb.from('lead_current').select('*');
   const scoped = scopeFilter(s);
-  if (scoped) q = q.or(scoped);
-  const { data: leads, error } = await q;
+  const { data: leads, error } = await fetchAll(() => {
+    let q = sb.from('lead_current').select('*');
+    if (scoped) q = q.or(scoped);
+    return q;
+  });
   if (error) return { success: false, code: 'SERVER_ERROR', message: 'Failed to load dashboard data.' };
 
   const today = todayKey();

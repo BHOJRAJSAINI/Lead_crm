@@ -32,7 +32,7 @@ export type ScopedLeads = Awaited<ReturnType<typeof fetchScopedLeads>>;
 
 export async function fetchScopedLeads(session: Session): Promise<Map<string, any>> {
   const sb = supabaseAdmin();
-  let q = sb.from('lead_current').select('*');
+  let q: any = sb.from('lead_current').select('*');
   const email = session.email.toLowerCase();
   const role = (session.role || '').toLowerCase();
   if (!(role === 'admin' || email === SPECIAL_EMAILS.director || email === SPECIAL_EMAILS.purchase)) {

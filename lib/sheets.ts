@@ -12,18 +12,16 @@ function b64url(s: string): string {
 }
 
 function getServiceAccountJson(): any {
-  if (!ENV.GOOGLE_SERVICE_ACCOUNT_JSON) {
-    throw new Error('GOOGLE_SERVICE_ACCOUNT_JSON is not set.');
+  const raw = (ENV.GOOGLE_SERVICE_ACCOUNT_JSON || '').trim();
+  if (!raw) throw new Error('GOOGLE_SERVICE_ACCOUNT_JSON is not set.');
+  // Accept either the raw JSON or its base64 encoding.
+  const text = raw.startsWith('{') ? raw : Buffer.from(raw, 'base64').toString('utf8');
+  let sa: any;
+  try { sa = JSON.parse(text); } catch (_) {
+    throw new Error('GOOGLE_SERVICE_ACCOUNT_JSON is neither valid JSON nor base64-encoded JSON.');
   }
-  let raw = ENV.GOOGLE_SERVICE_ACCOUNT_JSON;
-  try { raw = Buffer.from(raw, 'base64').toString('utf8'); } catch (_) { /* maybe raw JSON */ }
-  try {
-    const parsed = JSON.parse(raw);
-    return parsed;
-  } catch (_) {
-    // double-encoded safety
-    return JSON.parse(Buffer.from(raw, 'base64').toString('utf8'));
-  }
+  if (typeof sa.private_key === 'string') sa.private_key = sa.private_key.replace(/\\n/g, '\n');
+  return sa;
 }
 
 export async function getAccessToken(): Promise<string> {

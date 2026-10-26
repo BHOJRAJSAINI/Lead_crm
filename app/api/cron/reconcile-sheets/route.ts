@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ENV } from '@/lib/env';
+import { isCronAuthorized } from '@/lib/cron-auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -7,8 +7,7 @@ export const dynamic = 'force-dynamic';
 /** Nightly full reconciliation: compares DB row counts vs Sheets and logs drift
  *  into sheet_sync_log (repair jobs can be added per-table later). */
 export async function GET(req: NextRequest) {
-  const auth = req.headers.get('authorization') || '';
-  if (!ENV.CRON_SECRET || auth !== 'Bearer ' + ENV.CRON_SECRET) {
+  if (!(await isCronAuthorized(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const { supabaseAdmin } = await import('@/lib/supabase');

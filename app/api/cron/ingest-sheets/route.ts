@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ENV } from '@/lib/env';
+import { isCronAuthorized } from '@/lib/cron-auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -38,8 +38,7 @@ function fmtDate(val: any): string {
 }
 
 export async function GET(req: NextRequest) {
-  const auth = req.headers.get('authorization') || '';
-  if (!ENV.CRON_SECRET || auth !== 'Bearer ' + ENV.CRON_SECRET) {
+  if (!(await isCronAuthorized(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const { supabaseAdmin } = await import('@/lib/supabase');

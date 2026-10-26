@@ -20,5 +20,7 @@ export async function POST(req: NextRequest) {
   }
   // Signature valid → trigger the ingest immediately (same logic as the cron).
   const { GET } = await import('../../cron/ingest-sheets/route');
-  return GET(req);
+  // The ingest handler expects the cron bearer; forward an internal request carrying it.
+  const internal = new NextRequest(req.url, { headers: { authorization: 'Bearer ' + ENV.CRON_SECRET } });
+  return GET(internal);
 }

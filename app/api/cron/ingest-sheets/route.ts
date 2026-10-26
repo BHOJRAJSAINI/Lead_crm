@@ -105,7 +105,8 @@ async function ingestFollowUps(sb: any, sheets: any) {
     if (error) throw new Error('follow_ups insert failed: ' + error.message); // cursor not advanced -> retried next run
   }
   const newLast = lastRow + rows.length;
-  await sb.from('sheet_sync_state').upsert({ key: stateKey, last_row: newLast, last_run: new Date().toISOString() }, { onConflict: 'key' });
+  const { error: stErr } = await sb.from('sheet_sync_state').upsert({ key: stateKey, last_row: newLast, last_run: new Date().toISOString() }, { onConflict: 'key' });
+  if (stErr) throw new Error('cursor update failed: ' + stErr.message);
   await sb.from('sheet_sync_log').insert({ direction: 'sheet->db', table_name: FU_SHEET, ok: true, detail: { inserted: batch.length, skipped, newLast } });
   return { source: FU_SHEET, inserted: batch.length, skipped, hasMore: rows.length >= FU_MAX_PER_RUN };
 }

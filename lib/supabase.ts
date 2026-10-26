@@ -17,6 +17,9 @@ export function supabaseAdmin(): SupabaseClient {
     }
     admin = createClient(ENV.SUPABASE_URL, ENV.SUPABASE_SERVICE_ROLE_KEY, {
       auth: { persistSession: false, autoRefreshToken: false },
+      // Next.js caches fetch() GETs in its Data Cache by default; that served stale rows (and a stale
+      // sync cursor). Every Supabase call must hit the database.
+      global: { fetch: (input: any, init?: any) => fetch(input, { ...init, cache: 'no-store' }) },
     });
   }
   return admin;

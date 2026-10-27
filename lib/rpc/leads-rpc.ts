@@ -63,9 +63,17 @@ export async function handleGetLeadsWithFollowUpData(req: NextRequest, args: any
     statuses[l.lead_status || 'New'] = true;
   });
 
+  // Latest quotation per lead on this page -> stable link (/api/quotation/<id>) that redirects to a fresh signed PDF URL.
+  const quoteByLead: Record<string, string> = {};
+  const pageLeadIds = Array.from(new Set((data || []).map((l: any) => l.lead_id).filter(Boolean)));
+  if (pageLeadIds.length) {
+    const { data: qrows } = await sb.from('quotations').select('id, lead_id, created_at').in('lead_id', pageLeadIds).order('created_at', { ascending: false });
+    for (const q of qrows || []) if (!quoteByLead[q.lead_id]) quoteByLead[q.lead_id] = '/api/quotation/' + q.id;
+  }
+
   return {
     success: true, total: count || 0, page, pageSize,
-    leads: (data || []).map((l: any) => toClientLead(l)),
+    leads: (data || []).map((l: any) => ({ ...toClientLead(l), quotationUrl: quoteByLead[l.lead_id] || '' })),
     filterOptions: {
       cities: Object.keys(cities).sort(), sources: Object.keys(sources).sort(),
       assignees: Object.keys(assignees).sort(), statuses: Object.keys(statuses).sort(),

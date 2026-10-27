@@ -151,13 +151,14 @@ async function nameEmailMap(sheets: any): Promise<Record<string, string>> {
 }
 
 /** Replace table contents when the sheet content changed (hash kept in sheet_sync_state.extra). */
-async function replaceIfChanged(sb: any, table: string, rows: any[]) {
+async function replaceIfChanged(sb: any, table: string, rows: any[], onlyImported = false) {
   const { createHash } = await import('crypto');
   const hash = createHash('sha1').update(JSON.stringify(rows)).digest('hex');
   const key = 'ingest:' + table + ':hash';
   const { data: st } = await sb.from('sheet_sync_state').select('extra').eq('key', key).maybeSingle();
   if (st?.extra?.hash === hash) return { changed: false };
-  const { error: dErr } = await sb.from(table).delete().not('id', 'is', null);
+  const del = sb.from(table).delete();
+  const { error: dErr } = await (onlyImported ? del.eq('generated_by', 'sheet-import') : del.not('id', 'is', null));
   if (dErr) throw new Error(table + ' clear failed: ' + dErr.message);
   for (let i = 0; i < rows.length; i += 300) {
     const { error } = await sb.from(table).insert(rows.slice(i, i + 300));
@@ -205,6 +206,33 @@ async function syncDelegation(sb: any, sheets: any) {
   }
   const res = await replaceIfChanged(sb, 'delegation', out);
   return { source: 'Delegation', pending: out.length, ...res };
+}
+
+/** Old quotations from the "Quotations" tab (PDF URL kept as-is). App-generated rows are never touched. */
+async function syncQuotations(sb: any, sheets: any) {
+  const rows: any[][] = await sheets.readRange('Quotations', 'A2:T5000', true);
+  const num = (v: any) => (typeof v === 'number' ? v : parseFloat(String(v ?? '').replace(/,/g, '')) || 0);
+  const out: any[] = [];
+  for (const r of rows) {
+    const leadId = String((r && r[1]) ?? '').trim();
+    if (!leadId) continue;
+    let items: any[] = [];
+    try { const j = JSON.parse(String(r[10] ?? '[]')); if (Array.isArray(j)) items = j; } catch (_) { /* keep empty */ }
+    const rec: any = {
+      lead_id: leadId, customer_name: String(r[2] ?? '').trim(), contact_person: String(r[3] ?? '').trim(),
+      mobile: String(r[4] ?? '').trim(), location: String(r[5] ?? '').trim(),
+      event_date: typeof r[6] === 'number' ? fmtSerialDate(r[6]) : String(r[6] ?? '').trim(), days: String(r[7] ?? '').trim(),
+      sales_person: String(r[8] ?? '').trim(), sales_person_mobile: String(r[9] ?? '').trim(),
+      items, total: num(r[11]), gst_percent: num(r[12]) || 18, gst_amount: num(r[13]), grand_total: num(r[14]),
+      status: String(r[15] ?? '').trim() || 'Hot Lead', generated_by: 'sheet-import',
+      pdf_url: String(r[19] ?? '').trim(),
+    };
+    const ts = normTimestamp(r[0]);
+    if (ts) rec.created_at = ts;
+    out.push(rec);
+  }
+  const res = await replaceIfChanged(sb, 'quotations', out, true);
+  return { source: 'Quotations', rows: out.length, ...res };
 }
 
 export async function GET(req: NextRequest) {
@@ -275,7 +303,7 @@ export async function GET(req: NextRequest) {
     await sb.from('sheet_sync_log').insert({ direction: 'sheet->db', table_name: FU_SHEET, ok: false, error: String(e?.message || e).substring(0, 500) });
     summary.sources.push({ source: FU_SHEET, error: String(e?.message || e) });
   }
-  for (const fn of [syncChecklist, syncDelegation]) {
+  for (const fn of [syncChecklist, syncDelegation, syncQuotations]) {
     try { summary.sources.push(await fn(sb, sheets)); }
     catch (e: any) { summary.sources.push({ source: fn.name, error: String(e?.message || e).slice(0, 300) }); }
   }

@@ -2073,7 +2073,8 @@
     { key: 'assignedName', label: 'Assigned To' },
     { key: 'lastFollowUpDecision', label: 'Last Follow-Up Decision' },
     { key: 'nextFollowUpDate', label: 'Next Follow-Up Date' },
-    { key: 'leadStatus', label: 'Lead Status' }
+    { key: 'leadStatus', label: 'Lead Status' },
+    { key: 'quotation', label: 'Quotation' }
   ];
 
   function renderLeadModule(forceRefresh) {
@@ -2244,6 +2245,7 @@
           '<td>' + escapeHtml(l.lastFollowUpDecision || '—') + '</td>' +
           '<td>' + escapeHtml(l.nextFollowUpDate || '—') + '</td>' +
           '<td><span class="badge ' + statusBadgeClass + '">' + escapeHtml(statusDisplay) + '</span></td>' +
+          '<td>' + (l.quotationUrl ? '<a href="' + escapeHtml(l.quotationUrl) + '" target="_blank" rel="noopener" style="color:#4f46e5;font-weight:600;text-decoration:underline;">Click Here</a>' : '—') + '</td>' +
           '<td>' +
             '<div class="action-buttons">' +
               '<button class="btn-sm primary" onclick="window.__viewLead(\'' + escapeHtml(rowKey) + '\')">View</button>' +

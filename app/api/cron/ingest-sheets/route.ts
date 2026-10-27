@@ -224,8 +224,9 @@ async function syncQuotations(sb: any, sheets: any) {
       event_date: typeof r[6] === 'number' ? fmtSerialDate(r[6]) : String(r[6] ?? '').trim(), days: String(r[7] ?? '').trim(),
       sales_person: String(r[8] ?? '').trim(), sales_person_mobile: String(r[9] ?? '').trim(),
       items, total: num(r[11]), gst_percent: num(r[12]) || 18, gst_amount: num(r[13]), grand_total: num(r[14]),
-      status: String(r[15] ?? '').trim() || 'Hot Lead', generated_by: 'sheet-import',
-      pdf_url: String(r[19] ?? '').trim(),
+      // Columns after Grand Total vary between old/new rows: find URL / status by content instead of fixed index.
+      status: String(r[r.length - 1] ?? '').trim() || 'Hot Lead', generated_by: 'sheet-import',
+      pdf_url: String(r.slice(15).find((c: any) => /^https?:\/\//i.test(String(c ?? ''))) ?? '').trim(),
     };
     const ts = normTimestamp(r[0]);
     if (ts) rec.created_at = ts;

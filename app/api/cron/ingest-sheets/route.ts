@@ -80,7 +80,13 @@ async function ingestFollowUps(sb: any, sheets: any) {
   const stateKey = 'ingest:' + FU_SHEET + ':last_row';
   const { data: state } = await sb.from('sheet_sync_state').select('*').eq('key', stateKey).maybeSingle();
   const lastRow = state ? Number(state.last_row) : 1;
-  const rows: any[][] = await sheets.readRange(FU_SHEET, 'A' + (lastRow + 1) + ':H' + (lastRow + FU_MAX_PER_RUN), true);
+  let rows: any[][] = [];
+  try {
+    rows = await sheets.readRange(FU_SHEET, 'A' + (lastRow + 1) + ':H' + (lastRow + FU_MAX_PER_RUN), true);
+  } catch (e: any) {
+    if (!/exceeds grid limits/i.test(String(e?.message || e))) throw e; // cursor is past the last row: nothing new
+  }
+  if (!rows.length) return { source: FU_SHEET, inserted: 0, skipped: 0, hasMore: false };
   const batch: any[] = [];
   let skipped = 0;
   for (const r of rows) {
@@ -109,6 +115,96 @@ async function ingestFollowUps(sb: any, sheets: any) {
   if (stErr) throw new Error('cursor update failed: ' + stErr.message);
   await sb.from('sheet_sync_log').insert({ direction: 'sheet->db', table_name: FU_SHEET, ok: true, detail: { inserted: batch.length, skipped, newLast } });
   return { source: FU_SHEET, inserted: batch.length, skipped, hasMore: rows.length >= FU_MAX_PER_RUN };
+}
+
+const CHECKLIST_SS = process.env.CHECKLIST_SS_ID || '1uJDeTu_ztyDjxDfe7v10pBmvKGkr0Sfx6e6L2ebodtw';
+const DELEGATION_SS = process.env.DELEGATION_SS_ID || '1pKOvXSg_EiuhQgeRysQVNzDnHX1jFdXMIaKJJoNfcCI';
+
+function fmtSerialDate(v: any): string {
+  if (typeof v !== 'number') return String(v ?? '').trim();
+  const d = serialToUtc(v);
+  return pad2(d.getUTCDate()) + '/' + pad2(d.getUTCMonth() + 1) + '/' + d.getUTCFullYear();
+}
+function fmtSerialDateTime(v: any): string {
+  if (typeof v !== 'number') return String(v ?? '').trim();
+  const d = serialToUtc(v);
+  const h = d.getUTCHours();
+  return fmtSerialDate(v) + ' ' + pad2(h % 12 || 12) + ':' + pad2(d.getUTCMinutes()) + (h >= 12 ? ' PM' : ' AM');
+}
+
+/** name(lower) -> email, from the Users tab (name+email only, never passwords) and the checklist Tasklist tab. */
+async function nameEmailMap(sheets: any): Promise<Record<string, string>> {
+  const map: Record<string, string> = {};
+  try {
+    for (const r of await sheets.readRange('Users', 'A2:D200')) {
+      const e = String(r[0] ?? '').trim().toLowerCase(), n = String(r[3] ?? '').trim().toLowerCase();
+      if (e && n) map[n] = e;
+    }
+  } catch (_) { /* optional */ }
+  try {
+    for (const r of await sheets.readRange('Tasklist', 'A2:I500', false, CHECKLIST_SS)) {
+      const n = String(r[3] ?? '').trim().toLowerCase(), e = String(r[8] ?? '').trim().toLowerCase();
+      if (n && e && !map[n]) map[n] = e;
+    }
+  } catch (_) { /* optional */ }
+  return map;
+}
+
+/** Replace table contents when the sheet content changed (hash kept in sheet_sync_state.extra). */
+async function replaceIfChanged(sb: any, table: string, rows: any[]) {
+  const { createHash } = await import('crypto');
+  const hash = createHash('sha1').update(JSON.stringify(rows)).digest('hex');
+  const key = 'ingest:' + table + ':hash';
+  const { data: st } = await sb.from('sheet_sync_state').select('extra').eq('key', key).maybeSingle();
+  if (st?.extra?.hash === hash) return { changed: false };
+  const { error: dErr } = await sb.from(table).delete().not('id', 'is', null);
+  if (dErr) throw new Error(table + ' clear failed: ' + dErr.message);
+  for (let i = 0; i < rows.length; i += 300) {
+    const { error } = await sb.from(table).insert(rows.slice(i, i + 300));
+    if (error) { await sb.from('sheet_sync_state').delete().eq('key', key); throw new Error(table + ' insert failed: ' + error.message); }
+  }
+  await sb.from('sheet_sync_state').upsert({ key, last_row: rows.length, last_run: new Date().toISOString(), extra: { hash } }, { onConflict: 'key' });
+  await sb.from('sheet_sync_log').insert({ direction: 'sheet->db', table_name: table, ok: true, detail: { rows: rows.length } });
+  return { changed: true };
+}
+
+/** Pending checklist tasks (Done On empty) from "Master Task". */
+async function syncChecklist(sb: any, sheets: any) {
+  const names = await nameEmailMap(sheets);
+  const rows: any[][] = await sheets.readRange('Master Task', 'A2:J20000', true, CHECKLIST_SS);
+  const out: any[] = [];
+  for (const r of rows) {
+    if (!r || r[0] === '' || r[0] == null) continue;
+    if (r[4] !== '' && r[4] != null) continue; // already done
+    const email = (String(r[8] ?? '').trim() || names[String(r[1] ?? '').trim().toLowerCase()] || '').toLowerCase();
+    if (!email) continue;
+    out.push({
+      user_email: email, task_id: String(r[0]), task: String(r[2] ?? '').trim(),
+      planned_time: fmtSerialDateTime(r[5]), frequency: String(r[6] ?? '').trim(),
+      department: String(r[7] ?? '').trim(), updation_link: String(r[9] ?? '').trim(),
+    });
+  }
+  const res = await replaceIfChanged(sb, 'checklist', out);
+  return { source: 'Checklist', pending: out.length, ...res };
+}
+
+/** Pending delegated work (Status != Completed) from "Delegated work". */
+async function syncDelegation(sb: any, sheets: any) {
+  const names = await nameEmailMap(sheets);
+  const rows: any[][] = await sheets.readRange('Delegated work', 'A2:M5000', true, DELEGATION_SS);
+  const out: any[] = [];
+  for (const r of rows) {
+    if (!r || !r[6]) continue;
+    if (/^complet/i.test(String(r[8] ?? '').trim())) continue;
+    const email = (String(r[10] ?? '').trim() || names[String(r[2] ?? '').trim().toLowerCase()] || '').toLowerCase();
+    if (!email) continue;
+    out.push({
+      user_email: email, task_code: String(r[6]).trim(), assigned_by: String(r[1] ?? '').trim(),
+      work: String(r[3] ?? '').trim(), deadline: fmtSerialDate(r[4]), updation_link: String(r[7] ?? '').trim(),
+    });
+  }
+  const res = await replaceIfChanged(sb, 'delegation', out);
+  return { source: 'Delegation', pending: out.length, ...res };
 }
 
 export async function GET(req: NextRequest) {
@@ -178,6 +274,10 @@ export async function GET(req: NextRequest) {
   } catch (e: any) {
     await sb.from('sheet_sync_log').insert({ direction: 'sheet->db', table_name: FU_SHEET, ok: false, error: String(e?.message || e).substring(0, 500) });
     summary.sources.push({ source: FU_SHEET, error: String(e?.message || e) });
+  }
+  for (const fn of [syncChecklist, syncDelegation]) {
+    try { summary.sources.push(await fn(sb, sheets)); }
+    catch (e: any) { summary.sources.push({ source: fn.name, error: String(e?.message || e).slice(0, 300) }); }
   }
   return NextResponse.json({ ok: true, ...summary });
 }

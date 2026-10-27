@@ -101,17 +101,14 @@ export async function handleGenerateQuotation(req: NextRequest, args: any[]) {
         }
       } catch (_) { /* logo is best-effort */ }
     } else {
-      // Default header: bundled Panache logo
+      // Default header: bundled Panache quotation header image
       try {
-        const { LOGO_DATA_URL } = await import('../logo-data');
-        const bytes = Buffer.from(LOGO_DATA_URL.split(',')[1], 'base64');
-        const img = await doc.embedJpg(bytes);
-        const w = 250; const h = (img.height / img.width) * w;
+        const { QUOTATION_HEADER_B64 } = await import('../quotation-header-data');
+        const img = await doc.embedPng(Buffer.from(QUOTATION_HEADER_B64, 'base64'));
+        const w = 499; const h = (img.height / img.width) * w;
         page.drawImage(img, { x: M, y: y - h, width: w, height: h });
-        y -= h + 10;
-        page.drawLine({ start: { x: M - 6, y }, end: { x: M + 493, y }, thickness: 1, color: rgb(0.31, 0.27, 0.9) });
-        y -= 16;
-      } catch (_) { /* logo is best-effort */ }
+        y -= h + 14;
+      } catch (_) { /* header is best-effort */ }
     }
     page.drawText('QUOTATION', { x: M, y: y - 20, size: 20, font: bold, color: rgb(0.31, 0.27, 0.9) });
     y -= 40;

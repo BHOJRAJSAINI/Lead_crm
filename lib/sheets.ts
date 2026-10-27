@@ -132,3 +132,9 @@ export function colLetter(idx: number): string {
   }
   return s || 'A';
 }
+
+/** Tab titles of the spreadsheet (diagnostics). */
+export async function listTabs(): Promise<string[]> {
+  const meta = await sheetsCall('?fields=' + encodeURIComponent('sheets(properties(title))'), {});
+  return (meta.sheets || []).map((x: any) => x.properties.title);
+}

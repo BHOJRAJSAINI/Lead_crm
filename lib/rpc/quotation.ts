@@ -85,30 +85,30 @@ export async function handleGenerateQuotation(req: NextRequest, args: any[]) {
       if (isNaN(num)) return String(n);
       return num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
-    // optional header logo
-    if (ENV.QUOTATION_HEADER_URL) {
+    // Header: optional remote image (only if QUOTATION_HEADER_URL is a real http URL), else bundled Panache header.
+    let headerDrawn = false;
+    if (/^https?:\/\//i.test(ENV.QUOTATION_HEADER_URL || '')) {
       try {
-        if (ENV.QUOTATION_HEADER_URL.startsWith('http')) {
-          const imgRes = await fetch(ENV.QUOTATION_HEADER_URL);
-          if (imgRes.ok) {
-            const bytes = await imgRes.arrayBuffer();
-            const isPng = new Uint8Array(bytes)[0] === 0x89;
-            const img = isPng ? await doc.embedPng(bytes) : await doc.embedJpg(bytes);
-            const w = 499; const h = (img.height / img.width) * w;
-            page.drawImage(img, { x: M, y: y - h, width: w, height: h });
-            y -= h + 16;
-          }
+        const imgRes = await fetch(ENV.QUOTATION_HEADER_URL);
+        if (imgRes.ok) {
+          const bytes = await imgRes.arrayBuffer();
+          const isPng = new Uint8Array(bytes)[0] === 0x89;
+          const img = isPng ? await doc.embedPng(bytes) : await doc.embedJpg(bytes);
+          const w = 499; const h = (img.height / img.width) * w;
+          page.drawImage(img, { x: M, y: y - h, width: w, height: h });
+          y -= h + 16;
+          headerDrawn = true;
         }
-      } catch (_) { /* logo is best-effort */ }
-    } else {
-      // Default header: bundled Panache quotation header image
+      } catch (_) { /* fall back to bundled header */ }
+    }
+    if (!headerDrawn) {
       try {
         const { QUOTATION_HEADER_B64 } = await import('../quotation-header-data');
         const img = await doc.embedPng(Buffer.from(QUOTATION_HEADER_B64, 'base64'));
         const w = 499; const h = (img.height / img.width) * w;
         page.drawImage(img, { x: M, y: y - h, width: w, height: h });
         y -= h + 14;
-      } catch (_) { /* header is best-effort */ }
+      } catch (e) { console.error('quotation header failed:', e); }
     }
     page.drawText('QUOTATION', { x: M, y: y - 20, size: 20, font: bold, color: rgb(0.31, 0.27, 0.9) });
     y -= 40;

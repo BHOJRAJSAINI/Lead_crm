@@ -177,7 +177,7 @@ async function syncChecklist(sb: any, sheets: any) {
     if (!r || r[0] === '' || r[0] == null) continue;
     if (r[4] !== '' && r[4] != null) continue; // already done
     const email = (String(r[8] ?? '').trim() || names[String(r[1] ?? '').trim().toLowerCase()] || '').toLowerCase();
-    if (!email) continue;
+    if (!email || !email.includes('@')) continue;
     out.push({
       user_email: email, task_id: String(r[0]), task: String(r[2] ?? '').trim(),
       planned_time: fmtSerialDateTime(r[5]), frequency: String(r[6] ?? '').trim(),
@@ -197,7 +197,7 @@ async function syncDelegation(sb: any, sheets: any) {
     if (!r || !r[6]) continue;
     if (/^complet/i.test(String(r[8] ?? '').trim())) continue;
     const email = (String(r[10] ?? '').trim() || names[String(r[2] ?? '').trim().toLowerCase()] || '').toLowerCase();
-    if (!email) continue;
+    if (!email || !email.includes('@')) continue;
     out.push({
       user_email: email, task_code: String(r[6]).trim(), assigned_by: String(r[1] ?? '').trim(),
       work: String(r[3] ?? '').trim(), deadline: fmtSerialDate(r[4]), updation_link: String(r[7] ?? '').trim(),

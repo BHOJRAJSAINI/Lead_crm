@@ -10,7 +10,8 @@ export async function GET(req: NextRequest) {
   if (!(await isCronAuthorized(req))) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const sheets = await import('@/lib/sheets');
   const ss = req.nextUrl.searchParams.get('ss') || undefined;
-  const tabs = await sheets.listTabs(ss);
+  const only = req.nextUrl.searchParams.get('tab');
+  const tabs = (await sheets.listTabs(ss)).filter((t: string) => !only || t === only);
   const out: any[] = [];
   for (const t of tabs) {
     try {

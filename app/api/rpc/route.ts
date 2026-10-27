@@ -65,7 +65,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, code: 'VALIDATION_ERROR', message: 'Malformed request body.' }, { status: 400 });
   }
   const fn = String(body.fn || '');
-  const args = Array.isArray(body.args) ? body.args : [];
+  let args: any[] = Array.isArray(body.args) ? body.args : [];
+  // The legacy client passes the (decoy) session token as the first argument of every authenticated call.
+  // Auth rides on the HttpOnly cookie, so drop it so handlers see their real arguments.
+  if (typeof args[0] === 'string' && args[0].startsWith('cookie-backed-')) args = args.slice(1);
   const handler = DISPATCHER[fn];
   if (!handler) {
     return NextResponse.json({ success: false, code: 'VALIDATION_ERROR', message: 'Unknown function: ' + fn }, { status: 400 });

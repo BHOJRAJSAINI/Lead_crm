@@ -9,13 +9,14 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   if (!(await isCronAuthorized(req))) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const sheets = await import('@/lib/sheets');
-  const tabs = await sheets.listTabs();
+  const ss = req.nextUrl.searchParams.get('ss') || undefined;
+  const tabs = await sheets.listTabs(ss);
   const out: any[] = [];
   for (const t of tabs) {
     try {
-      const wantSample = /check|deleg/i.test(t);
-      const rows = await sheets.readRange(t, 'A1:Z' + (wantSample ? 3 : 1), true);
-      const rowCount = (await sheets.readRange(t, 'A1:A200000')).length;
+      const wantSample = !!ss || /check|deleg/i.test(t);
+      const rows = await sheets.readRange(t, 'A1:Z' + (wantSample ? 4 : 1), true, ss);
+      const rowCount = (await sheets.readRange(t, 'A1:A200000', false, ss)).length;
       out.push({ tab: t, rows: rowCount, header: rows[0] || [], sample: wantSample ? rows.slice(1) : undefined });
     } catch (e: any) {
       out.push({ tab: t, error: String(e?.message || e).slice(0, 200) });

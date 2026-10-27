@@ -68,9 +68,9 @@ export async function getAccessToken(): Promise<string> {
   return cached.token;
 }
 
-async function sheetsCall(path: string, init?: RequestInit): Promise<any> {
+async function sheetsCall(path: string, init?: RequestInit, ssId?: string): Promise<any> {
   const token = await getAccessToken();
-  const res = await fetch('https://sheets.googleapis.com/v4/spreadsheets/' + ENV.GOOGLE_SHEET_ID + path, {
+  const res = await fetch('https://sheets.googleapis.com/v4/spreadsheets/' + (ssId || ENV.GOOGLE_SHEET_ID) + path, {
     ...init,
     headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json', ...(init?.headers || {}) },
   });
@@ -115,10 +115,10 @@ export async function upsertRow(sheetName: string, headers: string[], keyCol: st
   });
 }
 
-export async function readRange(sheetName: string, a1: string, raw = false): Promise<any[][]> {
+export async function readRange(sheetName: string, a1: string, raw = false, ssId?: string): Promise<any[][]> {
   // raw=true returns dates/times as serial numbers (locale-independent) instead of formatted strings.
   const render = raw ? '&valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=SERIAL_NUMBER' : '';
-  const res = await sheetsCall('/values/' + encodeURIComponent(sheetName + '!' + a1) + '?majorDimension=ROWS' + render, {});
+  const res = await sheetsCall('/values/' + encodeURIComponent(sheetName + '!' + a1) + '?majorDimension=ROWS' + render, {}, ssId);
   return res.values || [];
 }
 
@@ -134,7 +134,7 @@ export function colLetter(idx: number): string {
 }
 
 /** Tab titles of the spreadsheet (diagnostics). */
-export async function listTabs(): Promise<string[]> {
-  const meta = await sheetsCall('?fields=' + encodeURIComponent('sheets(properties(title))'), {});
+export async function listTabs(ssId?: string): Promise<string[]> {
+  const meta = await sheetsCall('?fields=' + encodeURIComponent('sheets(properties(title))'), {}, ssId);
   return (meta.sheets || []).map((x: any) => x.properties.title);
 }

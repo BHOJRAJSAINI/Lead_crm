@@ -244,7 +244,9 @@
     .btn-icon:hover { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
     /* Lead table: horizontal + vertical scroll inside the card so the left-right scrollbar is always visible at the bottom */
     .table-scroll { overflow: auto; max-height: calc(100vh - 250px); }
-    .table-scroll table { min-width: 1650px; }
+    .table-scroll table { min-width: 100%; }
+    .table-scroll.wide table { min-width: 1650px; }
+    .table-scroll td { min-width: 70px; }
     .table-scroll thead th { position: sticky; top: 0; z-index: 2; background: #f8fafc; box-shadow: 0 1px 0 var(--border); }
     .table-scroll::-webkit-scrollbar { height: 12px; width: 12px; }
     .table-scroll::-webkit-scrollbar-thumb { background: #a5a8c9; border-radius: 6px; border: 2px solid transparent; background-clip: content-box; }
@@ -2153,7 +2155,7 @@
       '</div>' : '<div class="toolbar"></div>';
     el.innerHTML = toolbarHtml +
       '<div class="table-wrap">' +
-        '<div class="table-scroll"><table><thead><tr>' +
+        '<div class="table-scroll wide"><table><thead><tr>' +
           columns.map(function (c) { return '<th data-key="' + c.key + '">' + c.label + '</th>'; }).join('') +
           '<th style="min-width:160px;">Actions</th>' +
         '</tr></thead><tbody id="' + tableId + '_body"></tbody></table></div>' +
@@ -2326,10 +2328,10 @@
       '</div>';
     el.innerHTML = toolbarHtml +
       '<div class="table-wrap">' +
-        '<table><thead><tr>' +
+        '<div class="table-scroll wide"><table><thead><tr>' +
           columns.map(function (c) { return '<th data-key="' + c.key + '">' + c.label + '</th>'; }).join('') +
           '<th style="min-width:160px;">Actions</th>' +
-        '</tr></thead><tbody id="followupTable_body"></tbody></table>' +
+        '</tr></thead><tbody id="followupTable_body"></tbody></table></div>' +
         '<div class="table-footer"><span id="followupTable_count"></span><div class="pagination" id="followupTable_pagination"></div></div>' +
       '</div>';
     if (forceRefresh) STATE.followUpState.page = 1;
@@ -2487,7 +2489,7 @@
           '<td>' + disp(r.leadNo) + '</td>' +
           '<td>' + disp(r.followDate) + '</td>' +
           '<td>' + disp(r.followTime) + '</td>' +
-          '<td>' + disp(r.remark) + '</td>' +
+          '<td class="wrap-cell">' + disp(r.remark) + '</td>' +
           '<td><span class="badge ' + statusBadgeClass + '">' + disp(r.leadStatus || 'New') + '</span></td>' +
           '<td>' + disp(r.nextFollowDate) + '</td>' +
           '<td>' + disp(r.nextFollowTime) + '</td>' +
@@ -3098,9 +3100,9 @@
   // ===== CHECKLIST =====
   function renderChecklistModule(forceRefresh) {
     var el = document.getElementById('viewChecklist');
-    el.innerHTML = '<div class="table-wrap"><table><thead><tr>' +
+    el.innerHTML = '<div class="table-wrap"><div class="table-scroll"><table><thead><tr>' +
       '<th>Task ID</th><th>Task</th><th>Planned Time</th><th>Frequency</th><th>Department</th><th>Update</th>' +
-      '</tr></thead><tbody id="checklistBody">' + skeletonRows(6, 5) + '</tbody></table></div>';
+      '</tr></thead><tbody id="checklistBody">' + skeletonRows(6, 5) + '</tbody></table></div></div>';
     google.script.run
       .withSuccessHandler(function (res) {
         var body = document.getElementById('checklistBody');
@@ -3111,7 +3113,7 @@
         }
         if (!res.items.length) { body.innerHTML = '<tr><td colspan="6">' + emptyState('No checklist items assigned to you right now.') + '</td></tr>'; return; }
         body.innerHTML = res.items.map(function (it) {
-          return '<tr><td>' + escapeHtml(it.taskId) + '</td><td>' + escapeHtml(it.task) + '</td><td>' + escapeHtml(it.plannedTime || '—') + '</td>' +
+          return '<tr><td>' + escapeHtml(it.taskId) + '</td><td class="wrap-cell">' + escapeHtml(it.task) + '</td><td>' + escapeHtml(it.plannedTime || '—') + '</td>' +
             '<td>' + escapeHtml(it.frequency) + '</td><td>' + escapeHtml(it.department) + '</td>' +
             '<td>' + (it.updationLink ? '<a class="link-btn" href="' + escapeHtml(it.updationLink) + '" target="_blank" rel="noopener">Click Here</a>' : '<span style="color:#9ca3af;font-size:10px;">Unavailable</span>') + '</td></tr>';
         }).join('');
@@ -3130,9 +3132,9 @@
   // ===== DELEGATION =====
   function renderDelegationModule(forceRefresh) {
     var el = document.getElementById('viewDelegation');
-    el.innerHTML = '<div class="table-wrap"><table><thead><tr>' +
+    el.innerHTML = '<div class="table-wrap"><div class="table-scroll"><table><thead><tr>' +
       '<th>Task Code</th><th>Assigned By</th><th>Work</th><th>Deadline</th><th>Update</th>' +
-      '</tr></thead><tbody id="delegationBody">' + skeletonRows(5, 5) + '</tbody></table></div>';
+      '</tr></thead><tbody id="delegationBody">' + skeletonRows(5, 5) + '</tbody></table></div></div>';
     google.script.run
       .withSuccessHandler(function (res) {
         var body = document.getElementById('delegationBody');
@@ -3143,7 +3145,7 @@
         }
         if (!res.items.length) { body.innerHTML = '<tr><td colspan="5">' + emptyState('No tasks delegated to you right now.') + '</td></tr>'; return; }
         body.innerHTML = res.items.map(function (it) {
-          return '<tr><td>' + escapeHtml(it.taskCode) + '</td><td>' + escapeHtml(it.assignedBy) + '</td><td>' + escapeHtml(it.work) + '</td>' +
+          return '<tr><td>' + escapeHtml(it.taskCode) + '</td><td>' + escapeHtml(it.assignedBy) + '</td><td class="wrap-cell">' + escapeHtml(it.work) + '</td>' +
             '<td>' + escapeHtml(it.deadline || '—') + '</td>' +
             '<td>' + (it.updationLink ? '<a class="link-btn" href="' + escapeHtml(it.updationLink) + '" target="_blank" rel="noopener">Click Here</a>' : '<span style="color:#9ca3af;font-size:10px;">Unavailable</span>') + '</td></tr>';
         }).join('');
@@ -3427,11 +3429,11 @@
         '<button class="btn-icon" id="loc_refresh">↻ Refresh</button>' +
       '</div>' +
       '<div class="kpi-grid" id="loc_totals"></div>' +
-      '<div class="table-wrap"><table><thead><tr>' +
+      '<div class="table-wrap"><div class="table-scroll"><table><thead><tr>' +
         '<th>User</th><th>Email</th><th>Role</th><th>Status</th>' +
         '<th>Latitude</th><th>Longitude</th><th>Accuracy</th>' +
         '<th>Last Update</th><th>Map</th>' +
-      '</tr></thead><tbody id="loc_tbody"><tr class="skeleton-row"><td colspan="9"></td></tr></tbody></table>' +
+      '</tr></thead><tbody id="loc_tbody"><tr class="skeleton-row"><td colspan="9"></td></tr></tbody></table></div>' +
       '<div class="table-footer"><span id="loc_count"></span><div class="pagination" id="loc_pager"></div></div>' +
       '</div>';
     body.innerHTML = toolbar;
@@ -3729,12 +3731,12 @@
     }).join('');
     var tableHtml =
       '<div class="table-wrap" style="margin-top:14px;">' +
-        '<table><thead><tr>' +
+        '<div class="table-scroll"><table><thead><tr>' +
           '<th>Doer</th><th>Total</th><th>Pending</th><th>Converted</th><th>Fulfilled</th>' +
           '<th>Overdue</th><th>Due Today</th><th>No Follow-up</th><th>Conv %</th><th>Fulfil %</th><th>Last Activity</th>' +
         '</tr></thead><tbody>' +
         (rowsHtml || '<tr><td colspan="11">' + emptyState('No Doer data for the selected filters.') + '</td></tr>') +
-        '</tbody></table></div>';
+        '</tbody></table></div></div>';
     body.innerHTML = kpiHtml + chartHtml + tableHtml;
     ['rdChartLeads','rdChartConv'].forEach(function (id) { if (STATE.charts[id]) { try { STATE.charts[id].destroy(); } catch (e) {} } });
     safeRender(function () {

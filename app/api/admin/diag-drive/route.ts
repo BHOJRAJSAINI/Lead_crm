@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     const m = String(q.pdf_url || '').match(/\/d\/([\w-]+)/);
     if (!m) { failed.push({ lead: q.lead_id, why: 'no file id' }); continue; }
     const r = await fetch('https://www.googleapis.com/drive/v3/files/' + m[1] + '?fields=id,mimeType&supportsAllDrives=true', { headers: { Authorization: 'Bearer ' + token }, cache: 'no-store' });
-    if (r.ok) ok++; else failed.push({ lead: q.lead_id, status: r.status });
+    if (r.ok) ok++; else failed.push({ lead: q.lead_id, status: r.status, body: failed.length < 1 ? (await r.text()).slice(0, 500) : undefined });
   }
   return NextResponse.json({ total: (data || []).length, ok, failedCount: failed.length, failed: failed.slice(0, 5) });
 }

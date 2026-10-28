@@ -242,6 +242,15 @@
       display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: var(--text); transition: all .2s;
     }
     .btn-icon:hover { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
+    /* Lead table: horizontal + vertical scroll inside the card so the left-right scrollbar is always visible at the bottom */
+    .table-scroll { overflow: auto; max-height: calc(100vh - 250px); }
+    .table-scroll table { min-width: 1650px; }
+    .table-scroll thead th { position: sticky; top: 0; z-index: 2; background: #f8fafc; box-shadow: 0 1px 0 var(--border); }
+    .table-scroll::-webkit-scrollbar { height: 12px; width: 12px; }
+    .table-scroll::-webkit-scrollbar-thumb { background: #a5a8c9; border-radius: 6px; border: 2px solid transparent; background-clip: content-box; }
+    .table-scroll::-webkit-scrollbar-track { background: #eef0f7; }
+    .table-scroll { scrollbar-width: auto; scrollbar-color: #a5a8c9 #eef0f7; }
+    td.wrap-cell { white-space: normal; word-break: break-word; overflow-wrap: anywhere; min-width: 260px; max-width: 380px; line-height: 1.45; }
     .table-wrap { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); overflow: hidden; }
     table { width: 100%; border-collapse: collapse; font-size: 12px; }
     thead th {
@@ -2144,10 +2153,10 @@
       '</div>' : '<div class="toolbar"></div>';
     el.innerHTML = toolbarHtml +
       '<div class="table-wrap">' +
-        '<table><thead><tr>' +
+        '<div class="table-scroll"><table><thead><tr>' +
           columns.map(function (c) { return '<th data-key="' + c.key + '">' + c.label + '</th>'; }).join('') +
           '<th style="min-width:160px;">Actions</th>' +
-        '</tr></thead><tbody id="' + tableId + '_body"></tbody></table>' +
+        '</tr></thead><tbody id="' + tableId + '_body"></tbody></table></div>' +
         '<div class="table-footer"><span id="' + tableId + '_count"></span><div class="pagination" id="' + tableId + '_pagination"></div></div>' +
       '</div>';
   }
@@ -2242,7 +2251,7 @@
           '<td><span class="text-truncate" title="' + escapeHtml(l.detailRequirements || '—') + '">' + escapeHtml(truncateText(l.detailRequirements, 30)) + '</span></td>' +
           '<td><span class="badge">' + escapeHtml(l.leadSource || '—') + '</span></td>' +
           '<td>' + escapeHtml(assignedDisplay) + '</td>' +
-          '<td>' + escapeHtml(l.lastFollowUpDecision || '—') + '</td>' +
+          '<td class="wrap-cell">' + escapeHtml(l.lastFollowUpDecision || '—') + '</td>' +
           '<td>' + escapeHtml(l.nextFollowUpDate || '—') + '</td>' +
           '<td><span class="badge ' + statusBadgeClass + '">' + escapeHtml(statusDisplay) + '</span></td>' +
           '<td>' + (l.quotationUrl ? '<a href="' + escapeHtml(l.quotationUrl) + '" target="_blank" rel="noopener" style="color:#4f46e5;font-weight:600;text-decoration:underline;">Click Here</a>' : '—') + '</td>' +

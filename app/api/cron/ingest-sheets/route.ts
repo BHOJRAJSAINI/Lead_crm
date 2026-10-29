@@ -255,6 +255,7 @@ export async function GET(req: NextRequest) {
       const a1 = 'A' + (lastRow + 1) + ':' + sheets.colLetter(colEnd) + '200000';
       const rows = await sheets.readRange(src.sheetName, a1);
       let inserted = 0, skipped = 0, newLast = lastRow;
+      const insertErrors: string[] = [];
 
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
@@ -287,12 +288,12 @@ export async function GET(req: NextRequest) {
           assigned_name: String(row[m.assignedName] ?? '').trim(),
           base_status: status,
         });
-        if (error) { skipped++; continue; }
+        if (error) { skipped++; insertErrors.push(leadId + ': ' + error.message.slice(0, 120)); continue; }
         inserted++;
       }
       await sb.from('sheet_sync_state').upsert({ key: stateKey, last_row: newLast, last_run: new Date().toISOString() }, { onConflict: 'key' });
       await sb.from('sheet_sync_log').insert({ direction: 'sheet->db', table_name: src.sheetName, ok: true, detail: { inserted, skipped, newLast } });
-      summary.sources.push({ source: src.sheetName, inserted, skipped });
+      summary.sources.push({ source: src.sheetName, inserted, skipped, errors: insertErrors.length ? insertErrors.slice(0, 5) : undefined });
     } catch (e: any) {
       await sb.from('sheet_sync_log').insert({ direction: 'sheet->db', table_name: src.sheetName, ok: false, error: String(e?.message || e).substring(0, 500) });
       summary.sources.push({ source: src.sheetName, error: String(e?.message || e) });

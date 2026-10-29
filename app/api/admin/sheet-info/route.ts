@@ -11,6 +11,11 @@ export async function GET(req: NextRequest) {
   const sheets = await import('@/lib/sheets');
   const ss = req.nextUrl.searchParams.get('ss') || undefined;
   const only = req.nextUrl.searchParams.get('tab');
+  const range = req.nextUrl.searchParams.get('range');
+  if (only && range && !/^users$/i.test(only)) {
+    const rows = await sheets.readRange(only, range, false, ss);
+    return NextResponse.json({ ok: true, tab: only, range, rows });
+  }
   const tabs = (await sheets.listTabs(ss)).filter((t: string) => !only || t === only);
   const out: any[] = [];
   for (const t of tabs) {

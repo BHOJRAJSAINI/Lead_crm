@@ -287,6 +287,79 @@ async function refreshExistingLeads(sb: any, sheets: any) {
   return { source: 'RefreshLeads', scanned, updated };
 }
 
+/** Sheet deletions -> DB. Rows deleted from the lead tabs / Lead FollowUps are removed from the app too.
+ *  Safety: skipped when the sheet read is empty or when it would remove >25% (and >20 rows) at once.
+ *  Deleting sheet rows shifts row numbers, so the "new rows" cursors are pulled back (re-reads are de-duplicated). */
+async function removeDeleted(sb: any, sheets: any) {
+  const { fetchAll } = await import('@/lib/supabase');
+  const out: any = { source: 'RemoveDeleted', leadsRemoved: 0, followUpsRemoved: 0, blocked: [] as string[] };
+  const removedLeadIds: string[] = [];
+
+  for (const src of SOURCES) {
+    const rows = await sheets.readRange(src.sheetName, 'A2:A200000');
+    const inSheet = new Set<string>();
+    for (const r of rows) { const v = String((r && r[0]) ?? '').trim(); if (v) inSheet.add(v); }
+    if (!inSheet.size) { out.blocked.push(src.sheetName + ': empty read'); continue; }
+    const { data: db } = await fetchAll(() => sb.from('leads').select('id, lead_id').eq('source_key', src.key));
+    const gone = (db || []).filter((l: any) => !inSheet.has(String(l.lead_id).trim()));
+    if (!gone.length) continue;
+    if (gone.length > 20 && gone.length > (db || []).length * 0.25) { out.blocked.push(src.sheetName + ': ' + gone.length + ' rows would be removed'); continue; }
+    for (let i = 0; i < gone.length; i += 100) {
+      const { error } = await sb.from('leads').delete().in('id', gone.slice(i, i + 100).map((g: any) => g.id));
+      if (error) throw new Error('lead delete failed: ' + error.message);
+    }
+    out.leadsRemoved += gone.length;
+    removedLeadIds.push(...gone.map((g: any) => String(g.lead_id)));
+    const key = 'ingest:' + src.sheetName + ':last_row';
+    const { data: st } = await sb.from('sheet_sync_state').select('last_row').eq('key', key).maybeSingle();
+    const back = Math.max(1, Math.min(Number(st?.last_row || 1), rows.length + 1) - gone.length - 5);
+    await sb.from('sheet_sync_state').upsert({ key, last_row: back, last_run: new Date().toISOString() }, { onConflict: 'key' });
+    await sb.from('sheet_sync_log').insert({ direction: 'sheet->db', table_name: src.sheetName, ok: true, detail: { removed: gone.length, ids: gone.slice(0, 30).map((g: any) => g.lead_id) } });
+  }
+
+  // follow-ups of removed leads (only when that lead_id no longer exists in any source)
+  if (removedLeadIds.length) {
+    for (let i = 0; i < removedLeadIds.length; i += 100) {
+      const chunk = removedLeadIds.slice(i, i + 100);
+      const { data: still } = await sb.from('leads').select('lead_id').in('lead_id', chunk);
+      const keep = new Set((still || []).map((x: any) => x.lead_id));
+      const del = chunk.filter((x) => !keep.has(x));
+      if (del.length) await sb.from('follow_ups').delete().in('lead_id', del);
+    }
+  }
+
+  // follow-up rows deleted from the 'Lead FollowUps' tab
+  const { data: pend } = await sb.from('sheet_outbox').select('id').eq('table_name', 'follow_ups').eq('status', 'pending').limit(1);
+  if (!(pend && pend.length)) {
+    let rows: any[][] = [];
+    try { rows = await sheets.readRange(FU_SHEET, 'A2:H200000', true); } catch (e: any) { if (!/exceeds grid limits/i.test(String(e?.message || e))) throw e; }
+    const k = (l: string, d: string, t: string) => l + '|' + d + '|' + String(t || '').slice(0, 5);
+    const inSheet = new Set<string>();
+    for (const r of rows) { const l = String((r && r[0]) ?? '').trim(); if (l) inSheet.add(k(l, normDate(r[1]), normTime(r[2]))); }
+    if (!inSheet.size) { out.blocked.push(FU_SHEET + ': empty read'); }
+    else {
+      const recent = new Date(Date.now() - 15 * 60000).toISOString();
+      const { data: db } = await fetchAll(() => sb.from('follow_ups').select('id, lead_id, follow_date, follow_time, created_at'));
+      const gone = (db || []).filter((f: any) => f.created_at < recent && !inSheet.has(k(String(f.lead_id).trim(), String(f.follow_date || ''), f.follow_time)));
+      if (gone.length > 20 && gone.length > (db || []).length * 0.25) out.blocked.push(FU_SHEET + ': ' + gone.length + ' rows would be removed');
+      else if (gone.length) {
+        for (let i = 0; i < gone.length; i += 100) {
+          const { error } = await sb.from('follow_ups').delete().in('id', gone.slice(i, i + 100).map((g: any) => g.id));
+          if (error) throw new Error('follow_up delete failed: ' + error.message);
+        }
+        out.followUpsRemoved = gone.length;
+        const key = 'ingest:' + FU_SHEET + ':last_row';
+        const { data: st } = await sb.from('sheet_sync_state').select('last_row').eq('key', key).maybeSingle();
+        const back = Math.max(1, Math.min(Number(st?.last_row || 1), rows.length + 1) - gone.length - 5);
+        await sb.from('sheet_sync_state').upsert({ key, last_row: back, last_run: new Date().toISOString() }, { onConflict: 'key' });
+        await sb.from('sheet_sync_log').insert({ direction: 'sheet->db', table_name: FU_SHEET, ok: true, detail: { removed: gone.length } });
+      }
+    }
+  }
+  if (!out.blocked.length) delete out.blocked;
+  return out;
+}
+
 export async function GET(req: NextRequest) {
   if (!(await isCronAuthorized(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -356,7 +429,7 @@ export async function GET(req: NextRequest) {
     await sb.from('sheet_sync_log').insert({ direction: 'sheet->db', table_name: FU_SHEET, ok: false, error: String(e?.message || e).substring(0, 500) });
     summary.sources.push({ source: FU_SHEET, error: String(e?.message || e) });
   }
-  for (const fn of [refreshExistingLeads, syncChecklist, syncDelegation, syncQuotations]) {
+  for (const fn of [removeDeleted, refreshExistingLeads, syncChecklist, syncDelegation, syncQuotations]) {
     try { summary.sources.push(await fn(sb, sheets)); }
     catch (e: any) { summary.sources.push({ source: fn.name, error: String(e?.message || e).slice(0, 300) }); }
   }

@@ -256,7 +256,7 @@ async function refreshExistingLeads(sb: any, sheets: any) {
   const { data: pend } = await sb.from('sheet_outbox').select('row_id').eq('table_name', 'leads').eq('status', 'pending');
   const { data: recent } = await sb.from('sheet_outbox').select('row_id').eq('table_name', 'leads').gte('processed_at', sinceIso);
   for (const r of [...(pend || []), ...(recent || [])]) protectedIds.add(String(r.row_id));
-  let updated = 0, scanned = 0;
+  let updated = 0, scanned = 0, inserted = 0; const insertErr: string[] = [];
   for (const src of SOURCES) {
     const rows = await sheets.readRange(src.sheetName, 'A2:' + sheets.colLetter(colIdx(src.endCol) + 1) + '200000');
     const { data: db } = await fetchAll(() => sb.from('leads').select('id, lead_id, customer_name, contact, city, client_requirement, detail_requirements, lead_source, assigned_name, base_status, updated_at').eq('source_key', src.key));
@@ -266,7 +266,24 @@ async function refreshExistingLeads(sb: any, sheets: any) {
     for (const row of rows) {
       const leadId = String((row && row[m.leadId]) ?? '').trim();
       const cur = leadId && byId[leadId];
-      if (!cur) continue;
+      if (leadId && !cur) {
+        // Row present in the sheet but missing in the app (cursor skipped it): insert, independent of the cursor.
+        if (inserted >= 200) continue;
+        const dateRaw = row[m.date];
+        const leadDate = typeof dateRaw === 'number'
+          ? new Date(Math.round((dateRaw - 25569) * 86400 * 1000)).toISOString().slice(0, 10) : fmtDate(dateRaw);
+        const g = (i: number | undefined) => (i === undefined ? '' : String(row[i] ?? '').trim());
+        const { error } = await sb.from('leads').insert({
+          row_key: src.key + '-' + leadId, lead_id: leadId, source_key: src.key, lead_date: leadDate || null,
+          customer_name: g(m.customerName), contact: g(m.contact), city: g(m.city),
+          client_requirement: g(m.clientRequirement), detail_requirements: g(m.detailRequirements),
+          lead_source: src.forceSource || g(m.leadSource) || src.fallbackSource,
+          assigned_name: g(m.assignedName), base_status: g(m.status) || 'New',
+        });
+        if (!error) { inserted++; byId[leadId] = { id: null }; } else if (insertErr.length < 3) insertErr.push(leadId + ': ' + error.message.slice(0, 100));
+        continue;
+      }
+      if (!cur || !cur.id) continue;
       scanned++;
       if (protectedIds.has(leadId) || (cur.updated_at && cur.updated_at > sinceIso)) continue;
       const t = (i: number | undefined) => (i === undefined ? undefined : String(row[i] ?? '').trim());
@@ -284,7 +301,7 @@ async function refreshExistingLeads(sb: any, sheets: any) {
       if (!error) updated++;
     }
   }
-  return { source: 'RefreshLeads', scanned, updated };
+  return { source: 'RefreshLeads', scanned, updated, inserted, insertErr: insertErr.length ? insertErr : undefined };
 }
 
 /** Sheet deletions -> DB. Rows deleted from the lead tabs / Lead FollowUps are removed from the app too.

@@ -15,11 +15,13 @@ export async function GET(req: NextRequest) {
   const sheets = await import('@/lib/sheets');
   const sb = supabaseAdmin();
 
-  // Header orders copied verbatim from Code.gs CONFIG / _appendRow.
-  const LEAD_HEADERS = ['Lead ID', 'Date', 'Customer Name', 'Contact', 'City', 'Client Requirement', 'Detail Requirements', 'Lead Source', 'Assigned Name', 'Lead Status'];
-  const FU_HEADERS = ['Lead ID', 'Follow Date', 'Follow Time', 'Remark', 'Lead Status', 'Next Follow Date', 'Next Follow Time', 'Timestamp'];
-  const USER_HEADERS = ['Email', 'Role', 'Name']; // NO password hashes, by design
-  const KEY_COL = '_db_id';
+  // Source tabs: where each lead lives and which columns hold Assigned Name / Status (same maps as ingest).
+  const SRC_TABS: Record<string, { tab: string; assigned: string; status: string }> = {
+    INDIAMART: { tab: 'Leads', assigned: 'O', status: 'Q' },
+    FB_INSTA: { tab: 'FB & INSTA', assigned: 'J', status: 'K' },
+    CORP_FB: { tab: 'Corp FB', assigned: 'J', status: 'K' },
+  };
+  const istStamp = () => new Date(Date.now() + 330 * 60000).toISOString().replace('T', ' ').slice(0, 19);
 
   const { data: batch } = await sb.from('sheet_outbox')
     .select('*').eq('status', 'pending').order('id').limit(50);
@@ -28,28 +30,24 @@ export async function GET(req: NextRequest) {
   for (const job of batch || []) {
     try {
       const p = job.payload || {};
-      let headers: string[], row: any[], sheetName: string;
       if (job.table_name === 'follow_ups') {
-        sheetName = 'Lead FollowUps'; headers = FU_HEADERS;
-        row = [p.leadId, p.followDate, p.followTime, p.remark, p.leadStatus, p.nextFollowDate, p.nextFollowTime, job.row_id];
+        // Append below the last follow-up (A:H = LEAD NO, Follow Date, Follow Time, Remark, Status, Next Date, Next Time, Timestamp)
+        await sheets.appendValues('Lead FollowUps', 'A:H', [[p.leadId, p.followDate, p.followTime, p.remark, p.leadStatus, p.nextFollowDate, p.nextFollowTime, istStamp()]]);
       } else if (job.table_name === 'leads') {
-        sheetName = 'Leads'; headers = LEAD_HEADERS.concat([KEY_COL, '_synced_at']);
-        row = LEAD_HEADERS.map((h) => {
-          switch (h) {
-            case 'Lead ID': return p.leadId; case 'Assigned Name': return p.assignedName ?? '';
-            case 'Lead Status': return p.status ?? ''; default: return '';
-          }
-        }).concat([job.row_id, new Date().toISOString()]);
-      } else if (job.table_name === 'users') {
-        sheetName = 'Users'; headers = USER_HEADERS.concat([KEY_COL, '_synced_at']);
-        row = [p.email, p.role, p.name, job.row_id, new Date().toISOString()];
+        // Update only the Assigned Name / Status cells of that lead's row in its own source tab (never rewrites the row).
+        const { data: lead } = await sb.from('leads').select('source_key').eq('lead_id', p.leadId).limit(1).maybeSingle();
+        const src = lead && SRC_TABS[lead.source_key];
+        if (!src) throw new Error('No source tab for lead ' + p.leadId);
+        const rowNo = await sheets.findRowByColA(src.tab, p.leadId);
+        if (!rowNo) throw new Error('Lead ' + p.leadId + ' not found in sheet tab ' + src.tab);
+        const upd: { range: string; values: any[][] }[] = [];
+        if (p.assignedName !== undefined) upd.push({ range: sheets.a1Cell(src.tab, src.assigned, rowNo), values: [[p.assignedName ?? '']] });
+        if (p.status !== undefined) upd.push({ range: sheets.a1Cell(src.tab, src.status, rowNo), values: [[p.status ?? '']] });
+        await sheets.batchUpdateValues(upd);
       } else {
-        // quotations / checklist / delegation: log-only for now (mirror is Leads-centric)
+        // users / quotations / checklist / delegation: not mirrored back to the sheet (sheet is their source).
         await sb.from('sheet_sync_log').insert({ direction: 'db->sheet', table_name: job.table_name, ok: true, detail: { skipped: true } });
-        await sb.from('sheet_outbox').update({ status: 'done', processed_at: new Date().toISOString() }).eq('id', job.id);
-        continue;
       }
-      await sheets.upsertRow(sheetName, headers, KEY_COL, job.row_id, row);
       await sb.from('sheet_outbox').update({ status: 'done', processed_at: new Date().toISOString() }).eq('id', job.id);
       results.push({ id: job.id, ok: true });
     } catch (e: any) {

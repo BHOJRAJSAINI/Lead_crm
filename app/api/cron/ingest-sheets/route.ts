@@ -106,6 +106,16 @@ async function ingestFollowUps(sb: any, sheets: any) {
     if (ts) rec.created_at = ts;
     batch.push(rec);
   }
+  // Rows the app itself appended to the sheet are already in the DB: skip exact (lead, date, time) matches.
+  const ids = Array.from(new Set(batch.map((b) => b.lead_id)));
+  const have = new Set<string>();
+  for (let i = 0; i < ids.length; i += 150) {
+    const { data: ex } = await sb.from('follow_ups').select('lead_id, follow_date, follow_time').in('lead_id', ids.slice(i, i + 150));
+    for (const x of ex || []) have.add(x.lead_id + '|' + x.follow_date + '|' + String(x.follow_time || '').slice(0, 5));
+  }
+  const fresh = batch.filter((b) => !have.has(b.lead_id + '|' + b.follow_date + '|' + String(b.follow_time || '').slice(0, 5)));
+  const dupSkipped = batch.length - fresh.length;
+  batch.length = 0; batch.push(...fresh); skipped += dupSkipped;
   for (let i = 0; i < batch.length; i += 300) {
     const { error } = await sb.from('follow_ups').insert(batch.slice(i, i + 300));
     if (error) throw new Error('follow_ups insert failed: ' + error.message); // cursor not advanced -> retried next run
@@ -236,6 +246,47 @@ async function syncQuotations(sb: any, sheets: any) {
   return { source: 'Quotations', rows: out.length, ...res };
 }
 
+/** Sheet edits to EXISTING leads (assigned name, status, customer/contact/city/requirement text) -> DB.
+ *  Skips leads edited in the app in the last 10 min or with a pending/recent outbox write, so app edits are never reverted. */
+async function refreshExistingLeads(sb: any, sheets: any) {
+  const { fetchAll } = await import('@/lib/supabase');
+  const MAX_UPDATES = 150;
+  const sinceIso = new Date(Date.now() - 10 * 60000).toISOString();
+  const protectedIds = new Set<string>();
+  const { data: pend } = await sb.from('sheet_outbox').select('row_id').eq('table_name', 'leads').eq('status', 'pending');
+  const { data: recent } = await sb.from('sheet_outbox').select('row_id').eq('table_name', 'leads').gte('processed_at', sinceIso);
+  for (const r of [...(pend || []), ...(recent || [])]) protectedIds.add(String(r.row_id));
+  let updated = 0, scanned = 0;
+  for (const src of SOURCES) {
+    const rows = await sheets.readRange(src.sheetName, 'A2:' + sheets.colLetter(colIdx(src.endCol) + 1) + '200000');
+    const { data: db } = await fetchAll(() => sb.from('leads').select('id, lead_id, customer_name, contact, city, client_requirement, detail_requirements, lead_source, assigned_name, base_status, updated_at').eq('source_key', src.key));
+    const byId: Record<string, any> = {};
+    for (const l of db || []) byId[l.lead_id] = l;
+    const m: any = src.map;
+    for (const row of rows) {
+      const leadId = String((row && row[m.leadId]) ?? '').trim();
+      const cur = leadId && byId[leadId];
+      if (!cur) continue;
+      scanned++;
+      if (protectedIds.has(leadId) || (cur.updated_at && cur.updated_at > sinceIso)) continue;
+      const t = (i: number | undefined) => (i === undefined ? undefined : String(row[i] ?? '').trim());
+      const next: any = {
+        customer_name: t(m.customerName), contact: t(m.contact), city: t(m.city),
+        client_requirement: t(m.clientRequirement), detail_requirements: t(m.detailRequirements),
+        assigned_name: t(m.assignedName), base_status: t(m.status) || 'New',
+      };
+      if (src.forceSource || m.leadSource !== undefined) next.lead_source = src.forceSource || t(m.leadSource) || src.fallbackSource;
+      const patch: any = {};
+      for (const k of Object.keys(next)) if (next[k] !== undefined && String(cur[k] ?? '') !== next[k]) patch[k] = next[k];
+      if (!Object.keys(patch).length) continue;
+      if (updated >= MAX_UPDATES) continue; // finish remaining diffs on the next runs
+      const { error } = await sb.from('leads').update(patch).eq('id', cur.id);
+      if (!error) updated++;
+    }
+  }
+  return { source: 'RefreshLeads', scanned, updated };
+}
+
 export async function GET(req: NextRequest) {
   if (!(await isCronAuthorized(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -305,7 +356,7 @@ export async function GET(req: NextRequest) {
     await sb.from('sheet_sync_log').insert({ direction: 'sheet->db', table_name: FU_SHEET, ok: false, error: String(e?.message || e).substring(0, 500) });
     summary.sources.push({ source: FU_SHEET, error: String(e?.message || e) });
   }
-  for (const fn of [syncChecklist, syncDelegation, syncQuotations]) {
+  for (const fn of [refreshExistingLeads, syncChecklist, syncDelegation, syncQuotations]) {
     try { summary.sources.push(await fn(sb, sheets)); }
     catch (e: any) { summary.sources.push({ source: fn.name, error: String(e?.message || e).slice(0, 300) }); }
   }

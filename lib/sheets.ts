@@ -138,3 +138,36 @@ export async function listTabs(ssId?: string): Promise<string[]> {
   const meta = await sheetsCall('?fields=' + encodeURIComponent('sheets(properties(title))'), {}, ssId);
   return (meta.sheets || []).map((x: any) => x.properties.title);
 }
+
+
+const q = (name: string) => "'" + name.replace(/'/g, "''") + "'";
+
+/** Append one or more rows below the existing table in A1 range (e.g. 'A:H'). */
+export async function appendValues(sheetName: string, a1: string, values: any[][]) {
+  return sheetsCall(
+    '/values/' + encodeURIComponent(q(sheetName) + '!' + a1) + ':append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS',
+    { method: 'POST', body: JSON.stringify({ values }) }
+  );
+}
+
+/** Update single cells / ranges without touching anything else. */
+export async function batchUpdateValues(data: { range: string; values: any[][] }[]) {
+  if (!data.length) return {};
+  return sheetsCall('/values:batchUpdate', {
+    method: 'POST',
+    body: JSON.stringify({ valueInputOption: 'USER_ENTERED', data: data.map((d) => ({ range: d.range, values: d.values })) }),
+  });
+}
+
+/** 1-based sheet row number whose column A equals `key` (row 1 is the header), or null. */
+export async function findRowByColA(sheetName: string, key: string): Promise<number | null> {
+  const res = await sheetsCall('/values/' + encodeURIComponent(q(sheetName) + '!A1:A200000') + '?majorDimension=COLUMNS', {});
+  const col: any[] = (res.values && res.values[0]) || [];
+  const want = String(key).trim();
+  for (let i = col.length - 1; i >= 1; i--) if (String(col[i] ?? '').trim() === want) return i + 1;
+  return null;
+}
+
+export function a1Cell(sheetName: string, colLetterStr: string, row: number) {
+  return q(sheetName) + '!' + colLetterStr + row;
+}

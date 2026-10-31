@@ -2675,6 +2675,13 @@
         window.__leadCache[leadKey] = lead;
         if (lead.leadId && lead.leadId !== leadKey) window.__leadCache[lead.leadId] = lead;
         if (lead._rowKey && lead._rowKey !== leadKey) window.__leadCache[lead._rowKey] = lead;
+        function fmtTs(v) {
+          if (!v) return '—';
+          var d = new Date(v); if (isNaN(d.getTime())) return escapeHtml(v);
+          var parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).formatToParts(d);
+          var g = {}; parts.forEach(function (x) { g[x.type] = x.value; });
+          return g.day + '-' + g.month + '-' + g.year + ' ' + (g.hour === '24' ? '00' : g.hour) + ':' + g.minute + ':' + g.second;
+        }
         function disp(v) { return (v !== undefined && v !== null && v !== '') ? escapeHtml(v) : '—'; }
         return '<tr>' +
           '<td>' + disp(r.leadNo) + '</td>' +
@@ -2684,7 +2691,7 @@
           '<td><span class="badge ' + statusBadgeClass + '">' + disp(r.leadStatus || 'New') + '</span></td>' +
           '<td>' + disp(r.nextFollowDate) + '</td>' +
           '<td>' + disp(r.nextFollowTime) + '</td>' +
-          '<td>' + disp(r.timestamp) + '</td>' +
+          '<td>' + fmtTs(r.timestamp) + '</td>' +
           '<td>' +
             '<div class="action-buttons">' +
               '<button class="btn-sm primary" onclick="window.__viewLead(\'' + escapeHtml(leadKey) + '\')">View</button>' +

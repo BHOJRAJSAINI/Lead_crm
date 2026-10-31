@@ -610,6 +610,21 @@
     html[data-listview="cards"] .view:not(#viewLead) .table-scroll tbody tr:has(td[colspan]) { grid-column: 1 / -1; box-shadow: none; border-style: dashed; }
     html[data-listview="cards"] .view:not(#viewLead) .table-scroll td.wrap-cell { min-width: 0; max-width: none; text-align: left; }
     html[data-listview="cards"] .view:not(#viewLead) .action-buttons { justify-content: flex-end; }
+
+    /* ===== Full-width layout: content uses all space right of the sidebar ===== */
+    .main { padding: 14px 16px; width: calc(100% - var(--sidebar-w)); max-width: none; min-height: 100vh; }
+    .topbar { margin: -14px -16px 14px; padding: 10px 16px; }
+    .view { width: 100%; max-width: none; }
+    .table-wrap { width: 100%; }
+    .table-scroll { max-height: calc(100vh - 205px); min-height: 320px; }
+    .table-scroll table { width: 100%; min-width: 100%; }
+    .table-scroll.wide table { min-width: max(100%, 1650px); }
+    td.wrap-cell { max-width: none; min-width: 260px; width: 28%; }
+    .toolbar { width: 100%; }
+    .toolbar input[type="text"] { flex: 1 1 220px; max-width: 420px; }
+    .kpi-grid, .panel-grid { width: 100%; }
+    .modal-box { max-width: min(1280px, 96vw); }
+    @media (max-width: 768px) { .main { padding: 12px 10px; width: 100%; } .topbar { margin: -12px -10px 12px; padding: 10px; } .table-scroll { max-height: none; } }
     @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
   </style>
 </head>

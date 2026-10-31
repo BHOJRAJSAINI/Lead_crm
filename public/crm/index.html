@@ -625,6 +625,60 @@
     .kpi-grid, .panel-grid { width: 100%; }
     .modal-box { max-width: min(1280px, 96vw); }
     @media (max-width: 768px) { .main { padding: 12px 10px; width: 100%; } .topbar { margin: -12px -10px 12px; padding: 10px; } .table-scroll { max-height: none; } }
+    /* ===== Report Doer visuals ===== */
+    .rd-hero { display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap; padding: 22px 26px; border-radius: 20px; color: #fff; margin-bottom: 14px; background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end)); box-shadow: var(--shadow-lg); position: relative; overflow: hidden; }
+    .rd-hero::after { content:""; position:absolute; right:-60px; top:-60px; width:220px; height:220px; border-radius:50%; background: rgba(255,255,255,.1); }
+    .rd-hero-text { flex: 1 1 320px; position: relative; z-index: 1; }
+    .rd-hero-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; opacity: .8; }
+    .rd-hero-title { font-size: 24px; font-weight: 800; letter-spacing: -.02em; margin: 4px 0; }
+    .rd-hero-sub { font-size: 13px; opacity: .9; margin-bottom: 12px; }
+    .rd-hero-rings { display: flex; gap: 18px; position: relative; z-index: 1; }
+    .rd-hero .rd-seg { background: rgba(255,255,255,.2); height: 10px; max-width: 480px; }
+    .rd-ring { position: relative; width: 92px; text-align: center; }
+    .rd-ring svg { width: 92px; height: 92px; display: block; } .rd-hero .rd-ring circle:first-child { stroke: rgba(255,255,255,.22); }
+    .rd-ring-val { position: absolute; top: 0; left: 0; width: 92px; height: 92px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; }
+    .rd-ring-label { font-size: 11px; font-weight: 600; opacity: .9; margin-top: 4px; }
+    .rd-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 14px; }
+    .rd-kpi { display: flex; gap: 12px; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 14px 16px; box-shadow: var(--shadow); border-left: 4px solid var(--accent); transition: transform .18s, box-shadow .18s; }
+    .rd-kpi:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+    .rd-kpi-ico { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); flex-shrink: 0; }
+    .rd-kpi-ico svg { width: 20px; height: 20px; }
+    .rd-kpi-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
+    .rd-kpi-val { font-size: 26px; font-weight: 800; letter-spacing: -.02em; line-height: 1.1; color: var(--text); }
+    .rd-kpi-sub { font-size: 10px; color: var(--text-muted); }
+    .rd-seg { display: flex; height: 8px; border-radius: 999px; overflow: hidden; background: var(--surface-3); gap: 2px; }
+    .rd-seg i { display: block; height: 100%; }
+    .rd-board { margin-bottom: 14px; }
+    .rd-row { display: flex; align-items: center; gap: 12px; padding: 10px 8px; border-radius: 12px; cursor: pointer; transition: background .15s; flex-wrap: wrap; }
+    .rd-row:hover { background: var(--primary-light); }
+    .rd-row-rank { width: 28px; text-align: center; font-size: 18px; flex-shrink: 0; }
+    .rd-rank { display: inline-flex; width: 22px; height: 22px; align-items: center; justify-content: center; border-radius: 50%; background: var(--surface-3); color: var(--text-muted); font-size: 11px; font-weight: 700; }
+    .rd-avatar { display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; color: #fff; font-weight: 700; flex-shrink: 0; }
+    .rd-row-main { flex: 1 1 240px; min-width: 200px; }
+    .rd-row-name { font-weight: 700; font-size: 13px; margin-bottom: 6px; color: var(--text); }
+    .rd-row-sub { font-weight: 500; font-size: 11px; color: var(--text-muted); }
+    .rd-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+    .rd-chip { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+    .rd-chip.good { background: color-mix(in srgb, var(--success) 15%, transparent); color: var(--success); }
+    .rd-chip.bad { background: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger); }
+    .rd-chip.info { background: color-mix(in srgb, #2563eb 15%, transparent); color: #2563eb; }
+    .rd-chip.mute { background: var(--surface-3); color: var(--text-muted); }
+    .rd-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); font-size: 11px; color: var(--text-muted); }
+    .rd-legend i { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 5px; }
+    .rd-chart { height: 240px !important; }
+    #rd_body .chart-card canvas { max-height: 240px; }
+    .rd-health { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-top: 12px; }
+    .rd-health div { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
+    .rd-health i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; } .rd-health b { color: var(--text); font-size: 16px; }
+    .rd-src { display: grid; grid-template-columns: 140px 1fr auto; gap: 12px; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--border); font-size: 12px; }
+    .rd-src:last-child { border-bottom: 0; }
+    .rd-src-name { font-weight: 600; color: var(--text); }
+    .rd-src-bar { background: var(--surface-3); border-radius: 999px; height: 10px; overflow: hidden; }
+    .rd-src-bar > div { height: 100%; background: color-mix(in srgb, var(--primary) 35%, transparent); border-radius: 999px; }
+    .rd-src-bar u { display: block; height: 100%; background: var(--primary); border-radius: 999px; text-decoration: none; }
+    .rd-src-num { color: var(--text-muted); white-space: nowrap; } .rd-src-num b { color: var(--text); }
+    #viewReportDoer .toolbar { position: sticky; top: 58px; z-index: 20; }
+    @media (max-width: 768px) { .rd-src { grid-template-columns: 1fr; } .rd-hero { padding: 16px; } .rd-hero-title { font-size: 19px; } }
     @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
   </style>
 </head>
@@ -3913,63 +3967,36 @@
     if (!dl) return;
     dl.innerHTML = (doers || []).map(function (d) { return '<option value="' + escapeHtml(d) + '"></option>'; }).join('');
   }
-  function _renderCombinedReport_(res) {
-    var body = document.getElementById('rd_body');
-    if (!body) return;
-    _fillDoerDatalist_(res.doers || []);
-    var ov = res.overall || {};
-    var kpiHtml =
-      '<div class="kpi-grid" style="margin-bottom:14px;">' +
-        '<div class="kpi-card"><div class="label">Total Leads</div><div class="value">' + (ov.totalLeads || 0) + '</div></div>' +
-        '<div class="kpi-card"><div class="label">Converted</div><div class="value" style="color:var(--success)">' + (ov.convertedLeads || 0) + '</div></div>' +
-        '<div class="kpi-card"><div class="label">Fulfilled</div><div class="value">' + (ov.fulfilledLeads || 0) + '</div></div>' +
-        '<div class="kpi-card"><div class="label">Pending</div><div class="value" style="color:var(--warning)">' + (ov.pendingLeads || 0) + '</div></div>' +
-        '<div class="kpi-card"><div class="label">Overdue</div><div class="value" style="color:var(--danger)">' + (ov.overdue || 0) + '</div></div>' +
-        '<div class="kpi-card"><div class="label">Due Today</div><div class="value">' + (ov.dueToday || 0) + '</div></div>' +
-        '<div class="kpi-card"><div class="label">Conversion Rate</div><div class="value">' + (ov.conversionRate || 0) + '%</div></div>' +
-        '<div class="kpi-card"><div class="label">Fulfillment Rate</div><div class="value">' + (ov.fulfillmentRate || 0) + '%</div></div>' +
-      '</div>';
-    var chartHtml =
-      '<div class="panel-grid">' +
-        '<div class="panel chart-card"><div class="panel-header">' + ICONS.bars + '<h3>Doer-wise Lead Distribution</h3></div><div class="chart-container"><canvas id="rdChartLeads"></canvas></div></div>' +
-        '<div class="panel chart-card"><div class="panel-header">' + ICONS.trend + '<h3>Conversion Rate by Doer</h3></div><div class="chart-container"><canvas id="rdChartConv"></canvas></div></div>' +
-      '</div>';
-    var rowsHtml = (res.rows || []).map(function (r) {
-      return '<tr>' +
-        '<td><a href="javascript:void(0)" class="link-btn" onclick="window.__reportDoerOpenIndividual(\'' + escapeHtml(r.doerName) + '\')">' + escapeHtml(r.doerName) + '</a></td>' +
-        '<td>' + r.totalLeads + '</td><td>' + r.pendingLeads + '</td><td>' + r.convertedLeads + '</td><td>' + r.fulfilledLeads + '</td>' +
-        '<td>' + r.overdue + '</td><td>' + r.dueToday + '</td><td>' + r.noFollowUp + '</td>' +
-        '<td>' + (r.conversionRate || 0) + '%</td><td>' + (r.fulfillmentRate || 0) + '%</td>' +
-        '<td>' + escapeHtml(r.lastActivity || '—') + '</td></tr>';
-    }).join('');
-    var tableHtml =
-      '<div class="table-wrap" style="margin-top:14px;">' +
-        '<div class="table-scroll"><table><thead><tr>' +
-          '<th>Doer</th><th>Total</th><th>Pending</th><th>Converted</th><th>Fulfilled</th>' +
-          '<th>Overdue</th><th>Due Today</th><th>No Follow-up</th><th>Conv %</th><th>Fulfil %</th><th>Last Activity</th>' +
-        '</tr></thead><tbody>' +
-        (rowsHtml || '<tr><td colspan="11">' + emptyState('No Doer data for the selected filters.') + '</td></tr>') +
-        '</tbody></table></div></div>';
-    body.innerHTML = kpiHtml + chartHtml + tableHtml;
-    ['rdChartLeads','rdChartConv'].forEach(function (id) { if (STATE.charts[id]) { try { STATE.charts[id].destroy(); } catch (e) {} } });
-    safeRender(function () {
-      var ctx = document.getElementById('rdChartLeads');
-      if (!ctx) return;
-      STATE.charts.rdChartLeads = new Chart(ctx, {
-        type: 'bar',
-        data: { labels: (res.rows || []).map(function (r) { return r.doerName; }), datasets: [{ label: 'Leads', data: (res.rows || []).map(function (r) { return r.totalLeads; }), backgroundColor: '#4f46e5' }] },
-        options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
-      });
-    }, 'rdChartLeads');
-    safeRender(function () {
-      var ctx = document.getElementById('rdChartConv');
-      if (!ctx) return;
-      STATE.charts.rdChartConv = new Chart(ctx, {
-        type: 'bar',
-        data: { labels: (res.rows || []).map(function (r) { return r.doerName; }), datasets: [{ label: 'Conversion %', data: (res.rows || []).map(function (r) { return r.conversionRate; }), backgroundColor: '#059669' }] },
-        options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
-      });
-    }, 'rdChartConv');
+  // ---- Report Doer: modern visuals ----
+  function rdCss(name, fallback) { try { return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback; } catch (e) { return fallback; } }
+  function rdInitials(n) { var p = String(n || '?').trim().split(/\s+/); return ((p[0] || '?')[0] + (p[1] ? p[1][0] : '')).toUpperCase(); }
+  function rdHue(n) { var h = 0; String(n || '').split('').forEach(function (c) { h = (h * 31 + c.charCodeAt(0)) % 360; }); return h; }
+  function rdAvatar(n, size) { size = size || 38; return '<span class="rd-avatar" style="width:' + size + 'px;height:' + size + 'px;background:linear-gradient(135deg,hsl(' + rdHue(n) + ',70%,52%),hsl(' + ((rdHue(n) + 40) % 360) + ',70%,45%));font-size:' + Math.round(size * 0.36) + 'px;">' + escapeHtml(rdInitials(n)) + '</span>'; }
+  function rdRing(pct, color, label) {
+    pct = Math.max(0, Math.min(100, Number(pct) || 0));
+    var r = 34, c = 2 * Math.PI * r, off = c * (1 - pct / 100);
+    return '<div class="rd-ring"><svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="' + r + '" fill="none" stroke="var(--surface-3)" stroke-width="8"/>' +
+      '<circle cx="40" cy="40" r="' + r + '" fill="none" stroke="' + color + '" stroke-width="8" stroke-linecap="round" stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + off.toFixed(1) + '" transform="rotate(-90 40 40)"/></svg>' +
+      '<div class="rd-ring-val">' + pct + '%</div><div class="rd-ring-label">' + escapeHtml(label) + '</div></div>';
+  }
+  function rdKpi(label, value, color, icon, sub) {
+    return '<div class="rd-kpi" style="--accent:' + color + ';"><div class="rd-kpi-ico">' + icon + '</div><div><div class="rd-kpi-label">' + label + '</div><div class="rd-kpi-val">' + value + '</div>' + (sub ? '<div class="rd-kpi-sub">' + sub + '</div>' : '') + '</div></div>';
+  }
+  function rdSeg(parts) {
+    var tot = parts.reduce(function (a, p) { return a + (p.v || 0); }, 0) || 1;
+    return '<div class="rd-seg">' + parts.map(function (p) { return p.v ? '<i title="' + escapeHtml(p.t) + ': ' + p.v + '" style="width:' + (p.v * 100 / tot).toFixed(2) + '%;background:' + p.c + ';"></i>' : ''; }).join('') + '</div>';
+  }
+  var RD_ICO = {
+    users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.1V12a10 10 0 1 1-5.9-9.1"/><path d="m22 4-10 10-3-3"/></svg>',
+    clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+    alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>',
+    cal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
+    star: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg>',
+    x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></svg>',
+    flag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7"/></svg>'
+  };
+  function _rdFillFilters_(res) {
     var sSel = document.getElementById('rd_source');
     if (sSel) {
       var cur = STATE.reportDoerState.leadSource;
@@ -3983,55 +4010,136 @@
       stSel.value = cur2 || '';
     }
   }
+  function _renderCombinedReport_(res) {
+    var body = document.getElementById('rd_body');
+    if (!body) return;
+    _fillDoerDatalist_(res.doers || []);
+    var ov = res.overall || {};
+    var rows = (res.rows || []).slice().sort(function (a, b) { return (b.convertedLeads - a.convertedLeads) || (b.totalLeads - a.totalLeads); });
+    var okC = rdCss('--success', '#059669'), warnC = rdCss('--warning', '#d97706'), dangC = rdCss('--danger', '#dc2626'), priC = rdCss('--primary', '#4f46e5');
+    var hero =
+      '<div class="rd-hero"><div class="rd-hero-text"><div class="rd-hero-eyebrow">Team performance</div>' +
+        '<div class="rd-hero-title">' + (ov.totalLeads || 0) + ' leads across ' + rows.length + ' doer' + (rows.length === 1 ? '' : 's') + '</div>' +
+        '<div class="rd-hero-sub">' + (ov.convertedLeads || 0) + ' converted · ' + (ov.fulfilledLeads || 0) + ' fulfilled · ' + (ov.pendingLeads || 0) + ' pending</div>' +
+        rdSeg([{ t: 'Converted', v: ov.convertedLeads || 0, c: '#34d399' }, { t: 'Fulfilled', v: ov.fulfilledLeads || 0, c: '#a7f3d0' }, { t: 'Pending', v: ov.pendingLeads || 0, c: '#fbbf24' }, { t: 'Other', v: Math.max(0, (ov.totalLeads || 0) - (ov.convertedLeads || 0) - (ov.fulfilledLeads || 0) - (ov.pendingLeads || 0)), c: 'rgba(255,255,255,.35)' }]) +
+      '</div><div class="rd-hero-rings">' + rdRing(ov.conversionRate, '#ffffff', 'Conversion') + rdRing(ov.fulfillmentRate, '#a7f3d0', 'Fulfilment') + '</div></div>';
+    var kpis = '<div class="rd-kpis">' +
+      rdKpi('Total Leads', ov.totalLeads || 0, priC, RD_ICO.users) +
+      rdKpi('Converted', ov.convertedLeads || 0, okC, RD_ICO.check) +
+      rdKpi('Fulfilled', ov.fulfilledLeads || 0, '#0d9488', RD_ICO.star) +
+      rdKpi('Pending', ov.pendingLeads || 0, warnC, RD_ICO.clock) +
+      rdKpi('Overdue', ov.overdue || 0, dangC, RD_ICO.alert, 'follow-ups missed') +
+      rdKpi('Due Today', ov.dueToday || 0, '#2563eb', RD_ICO.cal) + '</div>';
+    var board = rows.length ? '<div class="panel rd-board"><div class="panel-header">' + ICONS.bars + '<h3>Doer Leaderboard</h3></div>' +
+      rows.map(function (r, i) {
+        var medal = i === 0 ? '🥇' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : '<span class="rd-rank">' + (i + 1) + '</span>'));
+        var other = Math.max(0, r.totalLeads - r.convertedLeads - r.fulfilledLeads - r.pendingLeads);
+        return '<div class="rd-row" onclick="window.__reportDoerOpenIndividual(\'' + escapeHtml(r.doerName) + '\')">' +
+          '<div class="rd-row-rank">' + medal + '</div>' + rdAvatar(r.doerName) +
+          '<div class="rd-row-main"><div class="rd-row-name">' + escapeHtml(r.doerName) + '<span class="rd-row-sub"> · ' + r.totalLeads + ' leads · last activity ' + escapeHtml(r.lastActivity || '—') + '</span></div>' +
+            rdSeg([{ t: 'Converted', v: r.convertedLeads, c: okC }, { t: 'Fulfilled', v: r.fulfilledLeads, c: '#0d9488' }, { t: 'Pending', v: r.pendingLeads, c: warnC }, { t: 'Other', v: other, c: 'var(--surface-3)' }]) +
+          '</div><div class="rd-chips">' +
+            '<span class="rd-chip good" title="Conversion rate">' + (r.conversionRate || 0) + '% conv</span>' +
+            (r.overdue ? '<span class="rd-chip bad" title="Overdue follow-ups">' + r.overdue + ' overdue</span>' : '') +
+            (r.dueToday ? '<span class="rd-chip info" title="Due today">' + r.dueToday + ' today</span>' : '') +
+            (r.noFollowUp ? '<span class="rd-chip mute" title="No follow-up scheduled">' + r.noFollowUp + ' no f/u</span>' : '') +
+          '</div></div>';
+      }).join('') + '<div class="rd-legend"><span><i style="background:' + okC + '"></i>Converted</span><span><i style="background:#0d9488"></i>Fulfilled</span><span><i style="background:' + warnC + '"></i>Pending</span><span><i style="background:var(--surface-3)"></i>Other</span></div></div>' : '';
+    var chartHtml =
+      '<div class="panel-grid">' +
+        '<div class="panel chart-card"><div class="panel-header">' + ICONS.bars + '<h3>Lead Outcome by Doer</h3></div><div class="chart-container rd-chart"><canvas id="rdChartLeads"></canvas></div></div>' +
+        '<div class="panel chart-card"><div class="panel-header">' + ICONS.trend + '<h3>Conversion Rate by Doer</h3></div><div class="chart-container rd-chart"><canvas id="rdChartConv"></canvas></div></div>' +
+      '</div>';
+    var rowsHtml = rows.map(function (r) {
+      return '<tr>' +
+        '<td><a href="javascript:void(0)" class="link-btn" onclick="window.__reportDoerOpenIndividual(\'' + escapeHtml(r.doerName) + '\')">' + escapeHtml(r.doerName) + '</a></td>' +
+        '<td>' + r.totalLeads + '</td><td>' + r.pendingLeads + '</td><td>' + r.convertedLeads + '</td><td>' + r.fulfilledLeads + '</td>' +
+        '<td>' + (r.overdue ? '<span class="badge badge-danger">' + r.overdue + '</span>' : '0') + '</td><td>' + r.dueToday + '</td><td>' + r.noFollowUp + '</td>' +
+        '<td><span class="badge badge-success">' + (r.conversionRate || 0) + '%</span></td><td>' + (r.fulfillmentRate || 0) + '%</td>' +
+        '<td>' + escapeHtml(r.lastActivity || '—') + '</td></tr>';
+    }).join('');
+    var tableHtml =
+      '<div class="table-wrap" style="margin-top:14px;">' +
+        '<div class="table-scroll" style="min-height:0;"><table><thead><tr>' +
+          '<th>Doer</th><th>Total</th><th>Pending</th><th>Converted</th><th>Fulfilled</th>' +
+          '<th>Overdue</th><th>Due Today</th><th>No Follow-up</th><th>Conv %</th><th>Fulfil %</th><th>Last Activity</th>' +
+        '</tr></thead><tbody>' +
+        (rowsHtml || '<tr><td colspan="11">' + emptyState('No Doer data for the selected filters.') + '</td></tr>') +
+        '</tbody></table></div></div>';
+    body.innerHTML = hero + kpis + board + chartHtml + tableHtml;
+    ['rdChartLeads', 'rdChartConv'].forEach(function (id) { if (STATE.charts[id]) { try { STATE.charts[id].destroy(); } catch (e) {} } });
+    var txt = rdCss('--text-muted', '#6b7280'), grid = rdCss('--border', '#e5e7eb');
+    var labels = rows.map(function (r) { return r.doerName; });
+    safeRender(function () {
+      var ctx = document.getElementById('rdChartLeads'); if (!ctx) return;
+      STATE.charts.rdChartLeads = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: labels, datasets: [
+          { label: 'Converted', data: rows.map(function (r) { return r.convertedLeads; }), backgroundColor: okC, borderRadius: 4 },
+          { label: 'Fulfilled', data: rows.map(function (r) { return r.fulfilledLeads; }), backgroundColor: '#0d9488', borderRadius: 4 },
+          { label: 'Pending', data: rows.map(function (r) { return r.pendingLeads; }), backgroundColor: warnC, borderRadius: 4 }
+        ] },
+        options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: txt, boxWidth: 10, usePointStyle: true } } },
+          scales: { x: { stacked: true, ticks: { color: txt }, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0, color: txt }, grid: { color: grid } } } }
+      });
+    }, 'rdChartLeads');
+    safeRender(function () {
+      var ctx = document.getElementById('rdChartConv'); if (!ctx) return;
+      STATE.charts.rdChartConv = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: labels, datasets: [{ label: 'Conversion %', data: rows.map(function (r) { return r.conversionRate; }), backgroundColor: priC, borderRadius: 6 }] },
+        options: { indexAxis: 'y', maintainAspectRatio: false, plugins: { legend: { display: false } },
+          scales: { x: { beginAtZero: true, ticks: { color: txt, callback: function (v) { return v + '%'; } }, grid: { color: grid } }, y: { ticks: { color: txt }, grid: { display: false } } } }
+      });
+    }, 'rdChartConv');
+    _rdFillFilters_(res);
+  }
   function _renderIndividualReport_(res) {
     var body = document.getElementById('rd_body');
     if (!body) return;
     _fillDoerDatalist_(res.doers || []);
     var m = res.metrics || {};
-    var kpiHtml =
-      '<div style="margin-bottom:10px;font-weight:700;color:var(--primary);">Doer: ' +
-        escapeHtml(res.doer || STATE.name || '—') + ' &nbsp;<span style="color:var(--text-muted);font-size:11px;">' +
-        (res.range && (res.range.from || res.range.to) ? 'Range: ' + (res.range.from || '…') + ' → ' + (res.range.to || '…') : 'All Time') + '</span></div>' +
-      '<div class="kpi-grid">' +
-        '<div class="kpi-card"><div class="label">Total Assigned Leads</div><div class="value">' + (m.totalLeads || 0) + '</div></div>' +
-        '<div class="kpi-card"><div class="label">Pending</div><div class="value" style="color:var(--warning)">' + (m.pendingLeads || 0) + '</div></div>' +
-        '<div class="kpi-card"><div class="label">Converted</div><div class="value" style="color:var(--success)">' + (m.convertedLeads || 0) + '</div></div>' +
-        '<div class="kpi-card"><div class="label">Fulfilled</div><div class="value">' + (m.fulfilledLeads || 0) + '</div></div>' +
-        '<div class="kpi-card"><div class="label">Failed</div><div class="value" style="color:var(--danger)">' + (m.failedLeads || 0) + '</div></div>' +
-        '<div class="kpi-card"><div class="label">Action Required</div><div class="value">' + (m.actionRequired || 0) + '</div></div>' +
-        '<div class="kpi-card"><div class="label">Overdue</div><div class="value" style="color:var(--danger)">' + (m.overdue || 0) + '</div></div>' +
-        '<div class="kpi-card"><div class="label">Due Today</div><div class="value">' + (m.dueToday || 0) + '</div></div>' +
-        '<div class="kpi-card"><div class="label">Upcoming</div><div class="value">' + (m.upcoming || 0) + '</div></div>' +
-        '<div class="kpi-card"><div class="label">No Follow-up</div><div class="value" style="color:var(--text-muted)">' + (m.noFollowUp || 0) + '</div></div>' +
-        '<div class="kpi-card"><div class="label">Conversion Rate</div><div class="value">' + (m.conversionRate || 0) + '%</div></div>' +
-        '<div class="kpi-card"><div class="label">Fulfillment Rate</div><div class="value">' + (m.fulfillmentRate || 0) + '%</div></div>' +
-      '</div>';
-    var srcRows = (m.sourcePerformance || []).map(function (r) {
-      return '<tr><td>' + escapeHtml(r.source) + '</td><td>' + r.total + '</td><td>' + r.converted + '</td><td>' + r.rate + '%</td></tr>';
-    }).join('');
-    var srcHtml =
-      '<div class="panel" style="margin-top:14px;">' +
-        '<div class="panel-header">' + ICONS.bars + '<h3>Source-wise Performance</h3></div>' +
-        '<table><thead><tr><th>Source</th><th>Total</th><th>Converted</th><th>Rate</th></tr></thead>' +
-        '<tbody>' + (srcRows || '<tr><td colspan="4">' + emptyState('No source data.') + '</td></tr>') + '</tbody></table>' +
-      '</div>';
+    var name = res.doer || STATE.name || '—';
+    var okC = rdCss('--success', '#059669'), warnC = rdCss('--warning', '#d97706'), dangC = rdCss('--danger', '#dc2626'), priC = rdCss('--primary', '#4f46e5');
+    var range = res.range && (res.range.from || res.range.to) ? (res.range.from || '…') + ' → ' + (res.range.to || '…') : 'All time';
+    var hero =
+      '<div class="rd-hero"><div class="rd-hero-text" style="display:flex;gap:14px;align-items:center;">' + rdAvatar(name, 58) +
+        '<div><div class="rd-hero-eyebrow">Doer report · ' + escapeHtml(range) + '</div><div class="rd-hero-title">' + escapeHtml(name) + '</div>' +
+        '<div class="rd-hero-sub">' + (m.totalLeads || 0) + ' assigned · ' + (m.convertedLeads || 0) + ' converted · ' + (m.pendingLeads || 0) + ' pending</div></div></div>' +
+        '<div class="rd-hero-rings">' + rdRing(m.conversionRate, '#ffffff', 'Conversion') + rdRing(m.fulfillmentRate, '#a7f3d0', 'Fulfilment') + '</div></div>';
+    var kpis = '<div class="rd-kpis">' +
+      rdKpi('Assigned', m.totalLeads || 0, priC, RD_ICO.users) +
+      rdKpi('Pending', m.pendingLeads || 0, warnC, RD_ICO.clock) +
+      rdKpi('Converted', m.convertedLeads || 0, okC, RD_ICO.check) +
+      rdKpi('Fulfilled', m.fulfilledLeads || 0, '#0d9488', RD_ICO.star) +
+      rdKpi('Failed', m.failedLeads || 0, dangC, RD_ICO.x) +
+      rdKpi('Action Required', m.actionRequired || 0, '#9333ea', RD_ICO.flag) + '</div>';
+    var fu = [{ t: 'Overdue', v: m.overdue || 0, c: dangC }, { t: 'Due today', v: m.dueToday || 0, c: '#2563eb' }, { t: 'Upcoming', v: m.upcoming || 0, c: okC }, { t: 'No follow-up', v: m.noFollowUp || 0, c: 'var(--surface-3)' }];
+    var health = '<div class="panel" style="margin-top:14px;"><div class="panel-header">' + RD_ICO.cal.replace('<svg', '<svg style="width:14px;height:14px;color:var(--primary)"') + '<h3>Follow-up Health</h3></div>' + rdSeg(fu) +
+      '<div class="rd-health">' + fu.map(function (x) { return '<div><i style="background:' + x.c + '"></i><b>' + x.v + '</b><span>' + x.t + '</span></div>'; }).join('') + '</div></div>';
+    var srcArr = m.sourcePerformance || [];
+    var maxT = srcArr.reduce(function (a, r) { return Math.max(a, r.total || 0); }, 1);
+    var srcHtml = '<div class="panel" style="margin-top:14px;"><div class="panel-header">' + ICONS.bars + '<h3>Source-wise Performance</h3></div>' +
+      (srcArr.length ? srcArr.map(function (r) {
+        return '<div class="rd-src"><div class="rd-src-name">' + escapeHtml(r.source) + '</div>' +
+          '<div class="rd-src-bar"><div style="width:' + ((r.total || 0) * 100 / maxT).toFixed(1) + '%;"><u style="width:' + (r.total ? Math.min(100, (r.converted || 0) * 100 / r.total).toFixed(1) : 0) + '%;"></u></div></div>' +
+          '<div class="rd-src-num"><b>' + r.total + '</b> leads · ' + r.converted + ' conv · <span class="rd-chip good">' + r.rate + '%</span></div></div>';
+      }).join('') : emptyState('No source data.')) + '</div>';
     var chartHtml =
-      '<div class="panel chart-card" style="margin-top:14px;">' +
-        '<div class="panel-header">' + ICONS.trend + '<h3>14-Day Lead Trend</h3></div>' +
-        '<div class="chart-container"><canvas id="rdTrend"></canvas></div>' +
-      '</div>';
-    body.innerHTML = kpiHtml + srcHtml + chartHtml;
+      '<div class="panel chart-card" style="margin-top:14px;"><div class="panel-header">' + ICONS.trend + '<h3>14-Day Lead Trend</h3></div>' +
+      '<div class="chart-container rd-chart"><canvas id="rdTrend"></canvas></div></div>';
+    body.innerHTML = hero + kpis + health + srcHtml + chartHtml;
     if (STATE.charts.rdTrend) { try { STATE.charts.rdTrend.destroy(); } catch (e) {} }
     safeRender(function () {
       var ctx = document.getElementById('rdTrend');
       if (!ctx || !res.trend) return;
+      var c2 = ctx.getContext('2d'); var g = c2.createLinearGradient(0, 0, 0, 220);
+      g.addColorStop(0, priC + '55'); g.addColorStop(1, priC + '05');
+      var txt = rdCss('--text-muted', '#6b7280'), grid = rdCss('--border', '#e5e7eb');
       STATE.charts.rdTrend = new Chart(ctx, {
         type: 'line',
-        data: {
-          labels: res.trend.map(function (t) { return t.date.slice(5); }),
-          datasets: [{ label: 'Leads', data: res.trend.map(function (t) { return t.count; }), borderColor: '#4f46e5', backgroundColor: 'rgba(79,70,229,0.08)', fill: true, tension: 0.3 }]
-        },
-        options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+        data: { labels: res.trend.map(function (t) { return t.date.slice(5); }), datasets: [{ label: 'Leads', data: res.trend.map(function (t) { return t.count; }), borderColor: priC, backgroundColor: g, fill: true, tension: 0.35, pointRadius: 3, pointBackgroundColor: priC }] },
+        options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: txt }, grid: { display: false } }, y: { beginAtZero: true, ticks: { precision: 0, color: txt }, grid: { color: grid } } } }
       });
     }, 'rdTrend');
   }

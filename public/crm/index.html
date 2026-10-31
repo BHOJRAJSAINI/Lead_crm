@@ -5,7 +5,7 @@
   <base target="_top">
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script>try{var _a=JSON.parse(localStorage.getItem('crmAppearance')||'{}');var _h=document.documentElement;if(_a.theme)_h.setAttribute('data-theme',_a.theme);if(_a.density)_h.setAttribute('data-density',_a.density);}catch(e){}</script>
+  <script>try{var _a=JSON.parse(localStorage.getItem('crmAppearance')||'{}');var _h=document.documentElement;if(_a.theme)_h.setAttribute('data-theme',_a.theme);if(_a.density)_h.setAttribute('data-density',_a.density);if(_a.listview)_h.setAttribute('data-listview',_a.listview);}catch(e){}</script>
   <meta charset ="utf-8">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js" onerror="this.onerror=null;var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js';document.head.appendChild(s);"></script>
   <style>
@@ -593,6 +593,23 @@
       #leadCards { grid-template-columns: 1fr; }
       .view-toggle { margin-left: 0; }
     }
+
+    /* ===== Cards list view for ALL modules (Follow-Up, Delegation, Checklist, Reports…) ===== */
+    html[data-listview="cards"] .view:not(#viewLead) .table-wrap { background: transparent; border: 0; box-shadow: none; overflow: visible; }
+    html[data-listview="cards"] .view:not(#viewLead) .table-scroll { max-height: none; overflow: visible; }
+    html[data-listview="cards"] .view:not(#viewLead) .table-scroll table { min-width: 0 !important; display: block; }
+    html[data-listview="cards"] .view:not(#viewLead) .table-scroll thead { display: none; }
+    html[data-listview="cards"] .view:not(#viewLead) .table-scroll tbody { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+    html[data-listview="cards"] .view:not(#viewLead) .table-scroll tbody tr { display: block; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 10px 14px; box-shadow: var(--shadow); position: relative; overflow: hidden; transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+    html[data-listview="cards"] .view:not(#viewLead) .table-scroll tbody tr::before { content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background: linear-gradient(180deg, var(--gradient-start), var(--gradient-end)); }
+    html[data-listview="cards"] .view:not(#viewLead) .table-scroll tbody tr:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: var(--primary); }
+    html[data-listview="cards"] .view:not(#viewLead) .table-scroll tbody td { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 6px 0 6px 6px; border-bottom: 1px dashed var(--border); min-width: 0; max-width: none; background: transparent !important; text-align: right; word-break: break-word; }
+    html[data-listview="cards"] .view:not(#viewLead) .table-scroll tbody td:last-child { border-bottom: 0; }
+    html[data-listview="cards"] .view:not(#viewLead) .table-scroll tbody td[data-label]::before { content: attr(data-label); flex: 0 0 38%; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); padding-top: 2px; }
+    html[data-listview="cards"] .view:not(#viewLead) .table-scroll tbody td[colspan] { display: block; text-align: center; grid-column: 1 / -1; }
+    html[data-listview="cards"] .view:not(#viewLead) .table-scroll tbody tr:has(td[colspan]) { grid-column: 1 / -1; box-shadow: none; border-style: dashed; }
+    html[data-listview="cards"] .view:not(#viewLead) .table-scroll td.wrap-cell { min-width: 0; max-width: none; text-align: left; }
+    html[data-listview="cards"] .view:not(#viewLead) .action-buttons { justify-content: flex-end; }
     @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
   </style>
 </head>
@@ -4038,25 +4055,49 @@
     function apply() {
       if (a.theme && a.theme !== 'light') root.setAttribute('data-theme', a.theme); else root.removeAttribute('data-theme');
       root.setAttribute('data-density', a.density || 'comfortable');
+      root.setAttribute('data-listview', a.listview || 'table');
       var p = document.getElementById('appearancePanel'); if (!p) return;
       p.querySelectorAll('.ap-swatch').forEach(function (b) { b.classList.toggle('on', b.dataset.t === (a.theme || 'light')); });
       p.querySelectorAll('[data-d]').forEach(function (b) { b.classList.toggle('on', b.dataset.d === (a.density || 'comfortable')); });
+      p.querySelectorAll('[data-l]').forEach(function (b) { b.classList.toggle('on', b.dataset.l === (a.listview || 'table')); });
     }
     var p = document.createElement('div'); p.id = 'appearancePanel';
     p.innerHTML = '<div class="ap-row"><h4>Theme</h4><div class="ap-swatches">' +
       THEMES.map(function (t) { return '<button class="ap-swatch" title="' + t[0] + '" data-t="' + t[0] + '" style="background:' + t[1] + '"></button>'; }).join('') +
       '</div></div><div class="ap-row"><h4>Density</h4><div class="ap-seg">' +
-      '<button data-d="compact">Compact</button><button data-d="comfortable">Normal</button><button data-d="spacious">Roomy</button></div></div>';
+      '<button data-d="compact">Compact</button><button data-d="comfortable">Normal</button><button data-d="spacious">Roomy</button></div></div>' +
+      '<div class="ap-row"><h4>List view (all modules)</h4><div class="ap-seg"><button data-l="table">Table</button><button data-l="cards">Cards</button></div></div>';
     document.body.appendChild(p);
     p.addEventListener('click', function (e) {
-      var t = e.target.closest('[data-t]'), d = e.target.closest('[data-d]');
-      if (t) a.theme = t.dataset.t; if (d) a.density = d.dataset.d;
-      if (t || d) { save(a); apply(); }
+      var t = e.target.closest('[data-t]'), d = e.target.closest('[data-d]'), l = e.target.closest('[data-l]');
+      if (t) a.theme = t.dataset.t; if (d) a.density = d.dataset.d; if (l) a.listview = l.dataset.l;
+      if (t || d || l) { save(a); apply(); }
     });
     var btn = document.getElementById('appearanceBtn');
     if (btn) btn.addEventListener('click', function (e) { e.stopPropagation(); p.classList.toggle('open'); });
     document.addEventListener('click', function (e) { if (!p.contains(e.target)) p.classList.remove('open'); });
     apply();
+
+    // Label every table cell with its column header so the Cards list view can show "Label: value" rows.
+    var pending = false;
+    function labelTables() {
+      pending = false;
+      document.querySelectorAll('.view:not(#viewLead) .table-scroll table').forEach(function (tbl) {
+        var ths = tbl.querySelectorAll('thead th'); if (!ths.length) return;
+        var names = Array.prototype.map.call(ths, function (th) { return (th.textContent || '').trim(); });
+        tbl.querySelectorAll('tbody tr').forEach(function (tr) {
+          var i = 0;
+          Array.prototype.forEach.call(tr.children, function (td) {
+            if (td.hasAttribute('colspan')) return;
+            if (!td.hasAttribute('data-label') && names[i]) td.setAttribute('data-label', names[i]);
+            i++;
+          });
+        });
+      });
+    }
+    var main = document.querySelector('.main');
+    if (main) new MutationObserver(function () { if (!pending) { pending = true; requestAnimationFrame(labelTables); } }).observe(main, { childList: true, subtree: true });
+    labelTables();
   })();
 
 })();

@@ -312,12 +312,27 @@ export async function handleUpdateLeadStatus(req: NextRequest, args: any[]) {
   if (!p.leadId || !p.status) return { success: false, code: 'VALIDATION_ERROR', message: 'Lead ID and Status are required.' };
   if (VALID_STATUSES.indexOf(p.status) === -1) return { success: false, code: 'VALIDATION_ERROR', message: 'Invalid status value.' };
   const sb = supabaseAdmin();
-  const { data: lead } = await sb.from('leads').select('id').eq('lead_id', String(p.leadId).trim()).maybeSingle();
+  const leadKey = String(p.leadId).trim();
+  const { data: lead } = await sb.from('leads').select('id, base_status').eq('lead_id', leadKey).maybeSingle();
   if (!lead) return { success: false, code: 'NOT_FOUND', message: 'Lead not found.' };
   const { error } = await sb.from('leads').update({ base_status: p.status, updated_at: new Date().toISOString() }).eq('id', lead.id);
   if (error) return { success: false, code: 'SERVER_ERROR', message: 'Failed to update lead status.' };
   await enqueueSheetSync('leads', p.leadId, { leadId: p.leadId, status: p.status }, 'upsert');
-  return { success: true, message: 'Lead status updated successfully.' };
+
+  // Status changed => the pending follow-up is complete: clear its next follow-up date/time and carry the new status.
+  let followUpCompleted = false;
+  if ((lead.base_status || '') !== p.status) {
+    const { data: latest } = await sb.from('follow_ups').select('id, next_follow_date')
+      .eq('lead_id', leadKey).order('follow_date', { ascending: false }).order('follow_time', { ascending: false })
+      .order('created_at', { ascending: false }).limit(1).maybeSingle();
+    if (latest) {
+      const patch: any = { lead_status: p.status };
+      if (latest.next_follow_date) { patch.next_follow_date = ''; patch.next_follow_time = ''; followUpCompleted = true; }
+      await sb.from('follow_ups').update(patch).eq('id', latest.id);
+    }
+  }
+  await audit({ actorEmail: s.email, action: 'update_lead_status', entity: 'leads', entityId: leadKey, detail: { from: lead.base_status, to: p.status, followUpCompleted } });
+  return { success: true, message: 'Lead status updated successfully.' + (followUpCompleted ? ' Pending follow-up marked complete.' : '') };
 }
 
 export async function handleExportLeadsCsv(req: NextRequest, args: any[]) {

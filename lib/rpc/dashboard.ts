@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { supabaseAdmin, fetchAll } from '../supabase';
 import { requireSession, Session, AUTH_EXPIRED, visibleOwnerNames, isAdminSession } from '../auth';
+import { classifyFollow } from '../follow-class';
 import { SPECIAL_EMAILS, PENDING_STATUSES, ACTION_REQUIRED_STATUSES, WASTE_STATUSES, HOT_STATUSES, POTENTIAL_STATUSES, VALID_STATUSES } from '../config';
 import { todayKey, shiftDateKey } from '../ist';
 import { toClientLead, normalizeLeadKey } from './leads';
@@ -35,7 +36,7 @@ export async function handleGetDashboardData(req: NextRequest, args: any[]) {
   const actionRequiredMap: Record<string, { status: string; count: number; leads: any[] }> = {};
   ACTION_REQUIRED_STATUSES.forEach((st) => { actionRequiredMap[st] = { status: st, count: 0, leads: [] }; });
   let wasteLeads = 0, hotLeads = 0, sharedQuotationLeads = 0, potentialLeads = 0, convertedLeads = 0, pendingLeads = 0;
-  let overdueFollowups = 0, todayFollowups = 0, upcomingFollowups = 0, noFollowupScheduled = 0;
+  let overdueFollowups = 0, todayFollowups = 0, upcomingFollowups = 0, noFollowupScheduled = 0, followedUpLeads = 0;
   const wasteBySource: Record<string, number> = { INDIAMART: 0, META_CORP: 0, FACEBOOK: 0, INSTAGRAM: 0, UNKNOWN: 0 };
   const employeeData: Record<string, any> = {};
   const sourcePerformance: Record<string, any> = {};
@@ -73,11 +74,12 @@ export async function handleGetDashboardData(req: NextRequest, args: any[]) {
       if (actionRequiredMap[status].leads.length < 5) actionRequiredMap[status].leads.push(l);
     }
     const nextDate = l.nextFollowUpDate || '';
-    if (nextDate) {
-      if (nextDate < today) overdueFollowups++;
-      else if (nextDate === today) todayFollowups++;
-      else upcomingFollowups++;
-    } else noFollowupScheduled++;
+    const fc = classifyFollow(status, nextDate, l.followDate, today);
+    if (fc === 'overdue') overdueFollowups++;
+    else if (fc === 'today') todayFollowups++;
+    else if (fc === 'upcoming') upcomingFollowups++;
+    else if (fc === 'followed') followedUpLeads++;
+    else noFollowupScheduled++;
 
     const empName = l.assignedName || 'Unassigned';
     if (!employeeData[empName]) employeeData[empName] = { total: 0, pending: 0, pendingFollowups: 0, converted: 0, fulfilled: 0 };
@@ -85,7 +87,7 @@ export async function handleGetDashboardData(req: NextRequest, args: any[]) {
     if (PENDING_STATUSES.includes(status)) employeeData[empName].pending++;
     if (status === 'Converted') employeeData[empName].converted++;
     if (status === 'Fulfilled') employeeData[empName].fulfilled++;
-    if (nextDate && nextDate <= today) employeeData[empName].pendingFollowups++;
+    if (fc === 'overdue' || fc === 'today') employeeData[empName].pendingFollowups++;
 
     if (!sourcePerformance[src]) sourcePerformance[src] = { total: 0, converted: 0 };
     sourcePerformance[src].total++;
@@ -127,7 +129,7 @@ export async function handleGetDashboardData(req: NextRequest, args: any[]) {
     sourceTodayVsYesterday,
     assigneeDistribution: Object.keys(byAssignee).filter((k) => k && k.trim() !== '').map((k) => ({ name: k, count: byAssignee[k] })).sort((a, b) => b.count - a.count),
     trend, statusDistribution, statusBySource, actionRequired,
-    wasteLeads, wasteBySource, overdueFollowups, todayFollowups, upcomingFollowups, noFollowupScheduled,
+    wasteLeads, wasteBySource, overdueFollowups, todayFollowups, upcomingFollowups, noFollowupScheduled, followedUpLeads,
     pipelineDistribution, statusWidgetsAvailable: true,
     todayLeads, yesterdayLeads, weekLeads,
     todayDate: today, yesterdayDate: yesterday, weekStartDate: weekAgoKey,

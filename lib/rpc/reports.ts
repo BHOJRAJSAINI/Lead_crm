@@ -4,6 +4,7 @@ import { requireSession, AUTH_EXPIRED, isManagementSession, visibleOwnerNames } 
 import { REPORT_PENDING, REPORT_ACTION, REPORT_CONVERTED, REPORT_FULFILLED, REPORT_FAILED, VALID_STATUSES } from '../config';
 import { resolveDateRange, todayKey, shiftDateKey, Range } from '../ist';
 import { toCsv } from '../csv';
+import { classifyFollow } from '../follow-class';
 import { audit } from '../config';
 
 type Enriched = {
@@ -47,11 +48,8 @@ function applyReportFilters(leads: Enriched[], filters: any, session: any): { le
   if (filters.followStatus) {
     const today = todayKey();
     out = out.filter((l) => {
-      const nd = l.nextFollowUpDate || '';
-      if (filters.followStatus === 'overdue') return nd && nd < today;
-      if (filters.followStatus === 'today') return nd === today;
-      if (filters.followStatus === 'upcoming') return nd && nd > today;
-      if (filters.followStatus === 'none') return !nd;
+      const fc = classifyFollow(l.leadStatus, l.nextFollowUpDate, l.followDate, today);
+      if (['overdue', 'today', 'upcoming', 'none', 'followed'].includes(filters.followStatus)) return fc === filters.followStatus;
       return true;
     });
   }
@@ -62,7 +60,7 @@ function computeDoerMetrics(leads: Enriched[]) {
   const today = todayKey();
   const total = leads.length;
   let converted = 0, fulfilled = 0, failed = 0, pending = 0, action = 0;
-  let dueToday = 0, overdue = 0, upcoming = 0, noFollow = 0;
+  let dueToday = 0, overdue = 0, upcoming = 0, noFollow = 0, followed = 0;
   const statusDist: Record<string, number> = {};
   const sourceDist: Record<string, number> = {};
   const sourceConverted: Record<string, number> = {};
@@ -75,9 +73,9 @@ function computeDoerMetrics(leads: Enriched[]) {
     else if (REPORT_FAILED.includes(st)) failed++;
     if (REPORT_PENDING.includes(st)) pending++;
     if (REPORT_ACTION.includes(st)) action++;
-    const nd = l.nextFollowUpDate || '';
-    if (nd) { if (nd < today) overdue++; else if (nd === today) dueToday++; else upcoming++; }
-    else noFollow++;
+    const fc = classifyFollow(st, l.nextFollowUpDate, l.followDate, today);
+    if (fc === 'overdue') overdue++; else if (fc === 'today') dueToday++; else if (fc === 'upcoming') upcoming++;
+    else if (fc === 'followed') followed++; else noFollow++;
     const src = l.leadSource || 'Unknown';
     sourceDist[src] = (sourceDist[src] || 0) + 1;
     if (REPORT_CONVERTED.includes(st)) sourceConverted[src] = (sourceConverted[src] || 0) + 1;
@@ -88,7 +86,7 @@ function computeDoerMetrics(leads: Enriched[]) {
   return {
     totalLeads: total, pendingLeads: pending, convertedLeads: converted,
     fulfilledLeads: fulfilled, failedLeads: failed, actionRequired: action,
-    dueToday, overdue, upcoming, noFollowUp: noFollow,
+    dueToday, overdue, upcoming, noFollowUp: noFollow, followedUp: followed,
     conversionRate: Math.round(convRate * 100) / 100,
     fulfillmentRate: Math.round(fulRate * 100) / 100,
     statusDistribution: statusDist,

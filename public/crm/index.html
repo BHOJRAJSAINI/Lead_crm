@@ -3,6 +3,11 @@
 <html>
 <head>
   <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+  <meta name="theme-color" content="#4f46e5">
+  <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Panache CRM">
+  <link rel="manifest" href="/crm/manifest.webmanifest"><link rel="apple-touch-icon" href="/crm/icons/apple-touch-icon.png"><link rel="icon" href="/crm/icons/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script>try{var _a=JSON.parse(localStorage.getItem('crmAppearance')||'{}');var _h=document.documentElement;if(_a.theme)_h.setAttribute('data-theme',_a.theme);if(_a.density)_h.setAttribute('data-density',_a.density);if(_a.listview)_h.setAttribute('data-listview',_a.listview);}catch(e){}</script>
@@ -679,6 +684,52 @@
     .rd-src-num { color: var(--text-muted); white-space: nowrap; } .rd-src-num b { color: var(--text); }
     #viewReportDoer .toolbar { position: sticky; top: 58px; z-index: 20; }
     @media (max-width: 768px) { .rd-src { grid-template-columns: 1fr; } .rd-hero { padding: 16px; } .rd-hero-title { font-size: 19px; } }
+    /* ===== MOBILE APP MODE (phones / installed PWA) ===== */
+    html { -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
+    #bottomNav, #navBackdrop { display: none; }
+    @media (max-width: 768px) {
+      html, body { font-size: 14px; }
+      body { padding-bottom: calc(66px + env(safe-area-inset-bottom)); -webkit-user-select: none; user-select: none; }
+      input, textarea, select { -webkit-user-select: text; user-select: text; font-size: 16px !important; }
+      .sidebar { width: 82vw; max-width: 320px; z-index: 300; padding-top: env(safe-area-inset-top); }
+      #navBackdrop { position: fixed; inset: 0; background: rgba(2,6,23,.55); backdrop-filter: blur(3px); z-index: 250; }
+      body.nav-open #navBackdrop { display: block; }
+      .topbar { padding-top: calc(10px + env(safe-area-inset-top)); top: 0; margin-top: calc(-12px - env(safe-area-inset-top)); }
+      .topbar h2 { font-size: 17px; } .topbar .sub { display: none; }
+      .topbar-icon { display: none; }
+      .mobile-toggle { display: inline-flex; width: 38px; height: 38px; align-items: center; justify-content: center; border-radius: 12px; }
+      .topbar-actions .live-badge { padding: 7px 9px; font-size: 0; gap: 0; } .topbar-actions .live-badge .live-dot { margin: 0; }
+      #exportBtn { display: none; }
+      .btn-export, .btn-primary, .btn-secondary, .btn-icon, .pagination button { min-height: 40px; }
+      .toolbar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px; }
+      .toolbar input[type="text"] { grid-column: 1 / -1; max-width: none; min-width: 0; }
+      .toolbar input, .toolbar select, .toolbar .btn-icon { width: 100% !important; min-width: 0; min-height: 40px; }
+      .toolbar .view-toggle { grid-column: 1 / -1; margin-left: 0; justify-content: stretch; } .toolbar .view-toggle button { flex: 1; justify-content: center; }
+      .toolbar.collapsible:not(.open) > *:not(.tb-toggle):not(input[type="text"]):not(.view-toggle) { display: none !important; }
+      .toolbar .tb-toggle { grid-column: 1 / -1; background: var(--primary-light); color: var(--primary); border: 0; border-radius: 10px; padding: 9px; font-weight: 700; font-size: 13px; }
+      .kpi-grid { grid-template-columns: 1fr 1fr; }
+      .modal-overlay { align-items: flex-end !important; }
+      .modal-box { width: 100% !important; max-width: 100% !important; border-radius: 22px 22px 0 0; max-height: 92vh; padding: 18px 16px calc(18px + env(safe-area-inset-bottom)); animation: sheetUp .28s cubic-bezier(.2,.8,.2,1); }
+      .modal-box::before { content: ""; display: block; width: 40px; height: 4px; border-radius: 4px; background: var(--border); margin: -6px auto 12px; }
+      @keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+      .modal-actions { position: sticky; bottom: -2px; background: var(--surface); padding-top: 8px; }
+      .action-buttons .btn-sm { min-height: 36px; padding: 6px 12px; font-size: 12px; }
+      .lead-card, .rd-kpi { border-radius: 18px; }
+      #leadCards { grid-template-columns: 1fr; gap: 12px; }
+      html[data-listview="cards"] .view:not(#viewLead) .table-scroll tbody { grid-template-columns: 1fr; }
+      #appearancePanel { bottom: calc(78px + env(safe-area-inset-bottom)); }
+      #toastHost { bottom: calc(78px + env(safe-area-inset-bottom)); left: 12px; right: 12px; }
+      #bottomNav { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 200; background: color-mix(in srgb, var(--surface) 88%, transparent); backdrop-filter: blur(16px) saturate(1.5); border-top: 1px solid var(--border); padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); justify-content: space-around; box-shadow: 0 -6px 24px rgba(15,23,42,.08); }
+      #bottomNav button { flex: 1; background: none; border: 0; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10px; font-weight: 600; padding: 6px 2px; border-radius: 12px; position: relative; }
+      #bottomNav button svg { width: 22px; height: 22px; }
+      #bottomNav button.active { color: var(--primary); }
+      #bottomNav button.active::before { content: ""; position: absolute; top: -7px; width: 26px; height: 3px; border-radius: 3px; background: var(--primary); }
+      #bottomNav button:active { background: var(--primary-light); }
+      .install-banner { position: fixed; left: 12px; right: 12px; bottom: calc(78px + env(safe-area-inset-bottom)); z-index: 260; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 12px 14px; box-shadow: var(--shadow-lg); display: flex; gap: 10px; align-items: center; font-size: 12px; }
+      .install-banner b { color: var(--text); } .install-banner button { border: 0; border-radius: 10px; padding: 8px 12px; font-weight: 700; }
+      .install-banner .ib-go { background: var(--primary); color: #fff; } .install-banner .ib-x { background: transparent; color: var(--text-muted); }
+    }
+    @media (display-mode: standalone) { .install-banner { display: none !important; } }
     @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
   </style>
 </head>
@@ -740,6 +791,14 @@
   </div>
 
   <div id="appShell">
+    <div id="navBackdrop"></div>
+    <nav id="bottomNav" aria-label="Main">
+      <button data-page="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Home</button>
+      <button data-page="lead"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></svg>Leads</button>
+      <button data-page="followup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Follow-Up</button>
+      <button data-page="checklist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Tasks</button>
+      <button id="bnMore"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>More</button>
+    </nav>
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
         <div class="sidebar-logo-container">
@@ -1374,9 +1433,11 @@
     document.getElementById('delegationTaskBtn').addEventListener('click', function () {
       window.open('https://docs.google.com/forms/d/e/1FAIpQLScN_Q6SbVRX9E-IBJMevFnq58K3aeND7khbCy6S2eNg-G0tVg/viewform', '_blank');
     });
-    document.getElementById('mobileToggle').addEventListener('click', function () {
-      document.getElementById('sidebar').classList.toggle('open');
-    });
+    function toggleDrawer() { var o = document.getElementById('sidebar').classList.toggle('open'); document.body.classList.toggle('nav-open', o); }
+    document.getElementById('mobileToggle').addEventListener('click', toggleDrawer);
+    document.getElementById('bnMore').addEventListener('click', toggleDrawer);
+    document.getElementById('navBackdrop').addEventListener('click', toggleDrawer);
+    document.querySelectorAll('#bottomNav button[data-page]').forEach(function (b) { b.addEventListener('click', function () { navigate(b.getAttribute('data-page')); window.scrollTo(0, 0); }); });
     document.getElementById('nuCancel').addEventListener('click', function () {
       document.getElementById('newUserModal').style.display = 'none';
     });
@@ -1440,7 +1501,8 @@
       n.classList.toggle('active', n.getAttribute('data-page') === page);
     });
     document.querySelectorAll('.view').forEach(function (v) { v.style.display = 'none'; });
-    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebar').classList.remove('open'); document.body.classList.remove('nav-open');
+    document.querySelectorAll('#bottomNav button[data-page]').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-page') === page); });
     var meta = PAGE_META[page];
     document.getElementById('pageTitle').textContent = meta.title;
     document.getElementById('pageSub').textContent = meta.sub;
@@ -2134,16 +2196,20 @@
     var todayFollowups = res.todayFollowups || 0;
     var upcoming = res.upcomingFollowups || 0;
     var noFollowup = res.noFollowupScheduled || 0;
-    var overdueLeads = [], todayLeadsList = [], upcomingLeads = [], noFollowupLeads = [];
+    var overdueLeads = [], todayLeadsList = [], upcomingLeads = [], noFollowupLeads = [], followedLeads = [];
+    var NEWS = { '': 1, 'new': 1, 'new lead': 1, 'old lead': 1, 'old new lead': 1 };
+    function dnum(k) { var m = String(k || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? Math.floor(Date.UTC(+m[1], +m[2] - 1, +m[3]) / 86400000) : null; }
     allLeads.forEach(function(l) {
+      var st = String(l.leadStatus || 'New').trim().toLowerCase();
       var nextDate = l.nextFollowUpDate || '';
-      if (nextDate && nextDate < today) overdueLeads.push(l);
-      else if (nextDate === today) todayLeadsList.push(l);
-      else if (nextDate && nextDate > today) upcomingLeads.push(l);
-      else noFollowupLeads.push(l);
+      if (NEWS[st]) { noFollowupLeads.push(l); return; }
+      if (nextDate) { if (nextDate < today) overdueLeads.push(l); else if (nextDate === today) todayLeadsList.push(l); else upcomingLeads.push(l); return; }
+      var last = dnum(l.followDate), t = dnum(today);
+      if (last !== null && t !== null && t - last >= 10) overdueLeads.push(l); else followedLeads.push(l);
     });
+    overdue = overdueLeads.length; todayFollowups = todayLeadsList.length; upcoming = upcomingLeads.length; noFollowup = noFollowupLeads.length;
     var totalPending = overdue + todayFollowups + upcoming;
-    window.__pendingFollowupData = { overdueLeads: overdueLeads, todayLeads: todayLeadsList, upcomingLeads: upcomingLeads, noFollowupLeads: noFollowupLeads, allLeads: allLeads };
+    window.__pendingFollowupData = { overdueLeads: overdueLeads, todayLeads: todayLeadsList, upcomingLeads: upcomingLeads, noFollowupLeads: noFollowupLeads, followedLeads: followedLeads, allLeads: allLeads };
     el.innerHTML =
       '<div class="pending-followups-grid">' +
         '<div class="pending-card" style="background:#f8fafc;border-color:var(--border);" onclick="window.__handlePendingFollowupsClick(\'Total Pending Follow-ups\', \'All pending follow-ups from all sources\', \'all\')">' +
@@ -2161,6 +2227,9 @@
         '<div class="pending-card" style="background:#f3f4f6;border-color:#d1d5db;" onclick="window.__handlePendingFollowupsClick(\'No Follow-up Scheduled\', \'Leads without any follow-up scheduled from all sources\', \'none\')">' +
           '<div class="pending-label" style="color:var(--text-muted);">No Follow-up</div>' +
           '<div class="pending-value" style="color:var(--text-muted);">' + noFollowup + '</div></div>' +
+        '<div class="pending-card" style="background:#ede9fe;border-color:#c4b5fd;" onclick="window.__handlePendingFollowupsClick(\'Followed Up\', \'Status changed and followed up in the last 10 days\', \'followed\')">' +
+          '<div class="pending-label" style="color:#5b21b6;">Followed Up</div>' +
+          '<div class="pending-value" style="color:#7c3aed;">' + followedLeads.length + '</div></div>' +
       '</div>';
   }
 
@@ -2172,6 +2241,7 @@
     else if (type === 'today') leads = data.todayLeads || [];
     else if (type === 'upcoming') leads = data.upcomingLeads || [];
     else if (type === 'none') leads = data.noFollowupLeads || [];
+    else if (type === 'followed') leads = data.followedLeads || [];
     if (leads && leads.length > 0) showFilteredLeadsModal(title, subtitle, leads, 'nextFollowUpDate', null);
     else toast('No leads found for this category.', 'error');
   };
@@ -2353,7 +2423,7 @@
     loadLeadData();
   }
 
-  function getLeadView() { try { return localStorage.getItem('crmLeadView') === 'cards' ? 'cards' : 'table'; } catch (e) { return 'table'; } }
+  function getLeadView() { var mob = window.matchMedia && matchMedia('(max-width:768px)').matches; try { var v = localStorage.getItem('crmLeadView'); if (!v) return mob ? 'cards' : 'table'; return v === 'cards' ? 'cards' : 'table'; } catch (e) { return mob ? 'cards' : 'table'; } }
   function setLeadView(v) {
     var el = document.getElementById('viewLead'); if (el) el.setAttribute('data-view', v);
     try { localStorage.setItem('crmLeadView', v); } catch (e) {}
@@ -2580,7 +2650,7 @@
         '<select id="followupTable_source"><option value="">All Sources</option></select>' +
         '<select id="followupTable_followStatus"><option value="">All Follow Status</option>' +
           '<option value="overdue">Overdue</option><option value="today">Today</option>' +
-          '<option value="upcoming">Upcoming</option><option value="none">No Follow-up Scheduled</option>' +
+          '<option value="upcoming">Upcoming</option><option value="followed">Followed Up</option><option value="none">No Follow-up (New)</option>' +
         '</select>' +
         '<input type="date" id="followup_from_date" placeholder="From Date" title="From Date" style="width:140px;">' +
         '<input type="date" id="followup_to_date" placeholder="To Date" title="To Date" style="width:140px;">' +
@@ -3829,7 +3899,8 @@
           '<option value="overdue">Overdue</option>' +
           '<option value="today">Due Today</option>' +
           '<option value="upcoming">Upcoming</option>' +
-          '<option value="none">Not Scheduled</option>' +
+          '<option value="followed">Followed Up</option>' +
+          '<option value="none">No Follow-up (New)</option>' +
         '</select>' +
         '<button class="btn-icon" id="rd_export_leads">⬇ Leads CSV</button>' +
         '<button class="btn-icon" id="rd_export_summary">⬇ Summary CSV</button>' +
@@ -4114,7 +4185,7 @@
       rdKpi('Fulfilled', m.fulfilledLeads || 0, '#0d9488', RD_ICO.star) +
       rdKpi('Failed', m.failedLeads || 0, dangC, RD_ICO.x) +
       rdKpi('Action Required', m.actionRequired || 0, '#9333ea', RD_ICO.flag) + '</div>';
-    var fu = [{ t: 'Overdue', v: m.overdue || 0, c: dangC }, { t: 'Due today', v: m.dueToday || 0, c: '#2563eb' }, { t: 'Upcoming', v: m.upcoming || 0, c: okC }, { t: 'No follow-up', v: m.noFollowUp || 0, c: 'var(--surface-3)' }];
+    var fu = [{ t: 'Overdue', v: m.overdue || 0, c: dangC }, { t: 'Due today', v: m.dueToday || 0, c: '#2563eb' }, { t: 'Upcoming', v: m.upcoming || 0, c: okC }, { t: 'Followed up', v: m.followedUp || 0, c: '#8b5cf6' }, { t: 'No follow-up', v: m.noFollowUp || 0, c: 'var(--surface-3)' }];
     var health = '<div class="panel" style="margin-top:14px;"><div class="panel-header">' + RD_ICO.cal.replace('<svg', '<svg style="width:14px;height:14px;color:var(--primary)"') + '<h3>Follow-up Health</h3></div>' + rdSeg(fu) +
       '<div class="rd-health">' + fu.map(function (x) { return '<div><i style="background:' + x.c + '"></i><b>' + x.v + '</b><span>' + x.t + '</span></div>'; }).join('') + '</div></div>';
     var srcArr = m.sourcePerformance || [];
@@ -4185,7 +4256,7 @@
     function apply() {
       if (a.theme && a.theme !== 'light') root.setAttribute('data-theme', a.theme); else root.removeAttribute('data-theme');
       root.setAttribute('data-density', a.density || 'comfortable');
-      root.setAttribute('data-listview', a.listview || 'table');
+      root.setAttribute('data-listview', a.listview || (window.matchMedia && matchMedia('(max-width:768px)').matches ? 'cards' : 'table'));
       var p = document.getElementById('appearancePanel'); if (!p) return;
       p.querySelectorAll('.ap-swatch').forEach(function (b) { b.classList.toggle('on', b.dataset.t === (a.theme || 'light')); });
       p.querySelectorAll('[data-d]').forEach(function (b) { b.classList.toggle('on', b.dataset.d === (a.density || 'comfortable')); });
@@ -4228,6 +4299,45 @@
     var main = document.querySelector('.main');
     if (main) new MutationObserver(function () { if (!pending) { pending = true; requestAnimationFrame(labelTables); } }).observe(main, { childList: true, subtree: true });
     labelTables();
+  })();
+
+
+  // ===== Mobile: collapsible filter bars =====
+  (function () {
+    if (!(window.matchMedia && matchMedia('(max-width:768px)').matches)) return;
+    var busy = false;
+    function wire() {
+      busy = false;
+      document.querySelectorAll('#viewLead .toolbar, #viewFollowup .toolbar, #viewReportDoer .toolbar').forEach(function (tb) {
+        if (tb.classList.contains('collapsible') || tb.children.length < 4) return;
+        tb.classList.add('collapsible');
+        var b = document.createElement('button'); b.type = 'button'; b.className = 'tb-toggle'; b.textContent = '⚙ Filters';
+        b.addEventListener('click', function () { var o = tb.classList.toggle('open'); b.textContent = o ? '✕ Hide filters' : '⚙ Filters'; });
+        tb.insertBefore(b, tb.firstChild);
+      });
+    }
+    var main = document.querySelector('.main');
+    if (main) new MutationObserver(function () { if (!busy) { busy = true; requestAnimationFrame(wire); } }).observe(main, { childList: true, subtree: true });
+  })();
+
+  // ===== PWA: service worker + install prompt =====
+  (function () {
+    if ('serviceWorker' in navigator) window.addEventListener('load', function () { navigator.serviceWorker.register('/crm/sw.js', { scope: '/crm/' }).catch(function () {}); });
+    var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone;
+    var isMobile = window.matchMedia && matchMedia('(max-width:768px)').matches;
+    var dismissed = false; try { dismissed = localStorage.getItem('crmInstallDismissed') === '1'; } catch (e) {}
+    if (standalone || !isMobile || dismissed) return;
+    var deferred = null;
+    function show(html, onGo) {
+      if (document.getElementById('installBanner')) return;
+      var b = document.createElement('div'); b.id = 'installBanner'; b.className = 'install-banner';
+      b.innerHTML = '<div style="flex:1;">' + html + '</div>' + (onGo ? '<button class="ib-go">Install</button>' : '') + '<button class="ib-x">✕</button>';
+      document.body.appendChild(b);
+      b.querySelector('.ib-x').addEventListener('click', function () { b.remove(); try { localStorage.setItem('crmInstallDismissed', '1'); } catch (e) {} });
+      if (onGo) b.querySelector('.ib-go').addEventListener('click', function () { b.remove(); onGo(); });
+    }
+    window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferred = e; setTimeout(function () { show('<b>Install Panache CRM</b><br>Open like a mobile app from your home screen.', function () { deferred.prompt(); }); }, 2500); });
+    if (/iphone|ipad|ipod/i.test(navigator.userAgent)) setTimeout(function () { show('<b>Install on iPhone</b><br>Tap <b>Share</b> → <b>Add to Home Screen</b>.'); }, 3500);
   })();
 
 })();

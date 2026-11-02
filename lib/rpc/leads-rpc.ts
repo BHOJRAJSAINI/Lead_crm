@@ -3,6 +3,7 @@ import { supabaseAdmin, fetchAll } from '../supabase';
 import { requireSession, Session, AUTH_EXPIRED, visibleOwnerNames } from '../auth';
 import { SPECIAL_EMAILS, VALID_STATUSES, audit } from '../config';
 import { todayKey } from '../ist';
+import { classifyFollow } from '../follow-class';
 import { toClientLead, normalizeLeadKey, safeStatus } from './leads';
 import { enqueueSheetSync } from '../outbox';
 
@@ -123,12 +124,8 @@ export async function handleGetFollowUpsData(req: NextRequest, args: any[]) {
     .filter((r: any) => (!o.leadStatus || (r.lead_status || 'New') === o.leadStatus))
     .filter((r: any) => {
       if (!o.followStatus) return true;
-      const nextDate = r.next_follow_date || '';
-      const today = todayKey();
-      if (o.followStatus === 'overdue') return nextDate && nextDate < today;
-      if (o.followStatus === 'today') return nextDate === today;
-      if (o.followStatus === 'upcoming') return nextDate && nextDate > today;
-      if (o.followStatus === 'none') return !nextDate;
+      const fc = classifyFollow(r.lead_status, r.next_follow_date, r.follow_date, todayKey());
+      if (['overdue', 'today', 'upcoming', 'none', 'followed'].includes(o.followStatus)) return fc === o.followStatus;
       return true;
     });
 

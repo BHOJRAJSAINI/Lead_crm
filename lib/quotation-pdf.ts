@@ -138,7 +138,7 @@ export async function buildQuotationPdf(p: any, items: any[], total: number, gst
     const terms: { t: string; bullets?: string[] }[] = [
       { t: 'Inclusive: Installation, Dismantlement & Labor charges.' },
       { t: 'Additional Expenses: If there are any additional expenses beyond what is approved or mentioned in the list, would be chargeable accordingly on actuals.' },
-      { t: 'Payment Terms:', bullets: ['50% advance at the time of confirmation', '30% immediately after the installation of the structure', '20% Within 15 days of period after installation'] },
+      { t: 'Payment Terms:', bullets: ['50% advance upon confirmation.', '30% upon material delivery at site.', '20% immediately after installation completion.'] },
       { t: 'Losses and Damages: Any losses or damages will be recovered based on actual costs incurred.' },
       { t: 'Force Majeure & Liability Disclaimer: We shall not be held liable for any loss of life, injury, or damage to property/materials arising directly or indirectly from extreme or unforeseen weather conditions, including but not limited to storm winds, thunderstorms, heavy rainfall, lightning, or other acts of nature. Necessary safety measures and precautions will be advised and implemented to the extent reasonably practicable; however, the company shall not be responsible for consequences arising from such force majeure events.' },
     ];

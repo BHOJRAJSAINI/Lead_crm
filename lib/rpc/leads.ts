@@ -67,6 +67,7 @@ export function toClientLead(l: any, sourceKey?: string): any {
     date: l.lead_date || '',
     customerName: l.customer_name || '',
     contact: l.contact || '',
+    email: l.email || '',
     city: l.city || '',
     clientRequirement: l.client_requirement || '',
     detailRequirements: l.detail_requirements || '',

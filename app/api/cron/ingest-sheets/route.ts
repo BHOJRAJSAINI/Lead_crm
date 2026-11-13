@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
  *  for NEW rows. Source-tab column maps lifted from Code.gs LEAD_SOURCES. */
 const SOURCES = [
   { key: 'INDIAMART', sheetName: 'Leads', endCol: 'Q',
-    map: { leadId: 0, date: 1, customerName: 2, contact: 4, city: 10, clientRequirement: 7, detailRequirements: 8, assignedName: 14, status: 16 },
+    map: { leadId: 0, date: 1, customerName: 2, contact: 4, email: 13, city: 10, clientRequirement: 7, detailRequirements: 8, assignedName: 14, status: 16 },
     forceSource: 'INDIAMART', fallbackSource: 'INDIAMART' },
   { key: 'FB_INSTA', sheetName: 'FB & INSTA', endCol: 'K',
     map: { leadId: 0, date: 1, customerName: 2, contact: 3, city: 4, clientRequirement: 5, detailRequirements: 6, leadSource: 8, assignedName: 9, status: 10 },
@@ -250,7 +250,7 @@ async function syncQuotations(sb: any, sheets: any) {
  *  Skips leads edited in the app in the last 10 min or with a pending/recent outbox write, so app edits are never reverted. */
 async function refreshExistingLeads(sb: any, sheets: any) {
   const { fetchAll } = await import('@/lib/supabase');
-  const MAX_UPDATES = 150;
+  const MAX_UPDATES = 400;
   const sinceIso = new Date(Date.now() - 10 * 60000).toISOString();
   const protectedIds = new Set<string>();
   const { data: pend } = await sb.from('sheet_outbox').select('row_id').eq('table_name', 'leads').eq('status', 'pending');
@@ -259,7 +259,7 @@ async function refreshExistingLeads(sb: any, sheets: any) {
   let updated = 0, scanned = 0, inserted = 0; const insertErr: string[] = [];
   for (const src of SOURCES) {
     const rows = await sheets.readRange(src.sheetName, 'A2:' + sheets.colLetter(colIdx(src.endCol) + 1) + '200000');
-    const { data: db } = await fetchAll(() => sb.from('leads').select('id, lead_id, customer_name, contact, city, client_requirement, detail_requirements, lead_source, assigned_name, base_status, updated_at').eq('source_key', src.key));
+    const { data: db } = await fetchAll(() => sb.from('leads').select('id, lead_id, customer_name, contact, email, city, client_requirement, detail_requirements, lead_source, assigned_name, base_status, updated_at').eq('source_key', src.key));
     const byId: Record<string, any> = {};
     for (const l of db || []) byId[l.lead_id] = l;
     const m: any = src.map;
@@ -275,7 +275,7 @@ async function refreshExistingLeads(sb: any, sheets: any) {
         const g = (i: number | undefined) => (i === undefined ? '' : String(row[i] ?? '').trim());
         const { error } = await sb.from('leads').insert({
           row_key: src.key + '-' + leadId, lead_id: leadId, source_key: src.key, lead_date: leadDate || null,
-          customer_name: g(m.customerName), contact: g(m.contact), city: g(m.city),
+          customer_name: g(m.customerName), contact: g(m.contact), email: g(m.email), city: g(m.city),
           client_requirement: g(m.clientRequirement), detail_requirements: g(m.detailRequirements),
           lead_source: src.forceSource || g(m.leadSource) || src.fallbackSource,
           assigned_name: g(m.assignedName), base_status: g(m.status) || 'New',
@@ -288,7 +288,7 @@ async function refreshExistingLeads(sb: any, sheets: any) {
       if (protectedIds.has(leadId) || (cur.updated_at && cur.updated_at > sinceIso)) continue;
       const t = (i: number | undefined) => (i === undefined ? undefined : String(row[i] ?? '').trim());
       const next: any = {
-        customer_name: t(m.customerName), contact: t(m.contact), city: t(m.city),
+        customer_name: t(m.customerName), contact: t(m.contact), email: t(m.email), city: t(m.city),
         client_requirement: t(m.clientRequirement), detail_requirements: t(m.detailRequirements),
         assigned_name: t(m.assignedName), base_status: t(m.status) || 'New',
       };
@@ -422,6 +422,7 @@ export async function GET(req: NextRequest) {
           lead_date: leadDate || null,
           customer_name: String(row[m.customerName] ?? '').trim(),
           contact: String(row[m.contact] ?? '').trim(),
+          email: m.email === undefined ? '' : String(row[m.email] ?? '').trim(),
           city: String(row[m.city] ?? '').trim(),
           client_requirement: String(row[m.clientRequirement] ?? '').trim(),
           detail_requirements: String(row[m.detailRequirements] ?? '').trim(),

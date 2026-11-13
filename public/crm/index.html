@@ -2366,6 +2366,7 @@
     { key: 'date', label: 'Date' },
     { key: 'customerName', label: 'Customer Name' },
     { key: 'contact', label: 'Contact' },
+    { key: 'email', label: 'Email' },
     { key: 'city', label: 'City' },
     { key: 'clientRequirement', label: 'Client Requirement' },
     { key: 'detailRequirements', label: 'Detail Requirements' },
@@ -2443,7 +2444,7 @@
         '<div class="lead-card-head"><div><div class="lead-card-id">' + escapeHtml(l.leadId) + ' · ' + escapeHtml(l.date || '—') + '</div>' +
         '<div class="lead-card-name">' + escapeHtml(l.customerName || '—') + '</div></div>' +
         '<span class="badge ' + getStatusBadgeClass(l.leadStatus || 'New') + '">' + escapeHtml(l.leadStatus || 'New') + '</span></div>' +
-        '<div class="lead-card-meta"><span>📞 ' + makePhoneLink(l.contact) + '</span><span>📍 ' + escapeHtml(l.city || '—') + '</span><span>🏷 ' + escapeHtml(l.leadSource || '—') + '</span><span>👤 ' + escapeHtml(l.assignedName || 'Unassigned') + '</span></div>' +
+        '<div class="lead-card-meta"><span>📞 ' + makePhoneLink(l.contact) + '</span><span>📍 ' + escapeHtml(l.city || '—') + '</span>' + (l.email ? '<span>✉ ' + escapeHtml(l.email) + '</span>' : '') + '<span>' +'<span>🏷 ' + escapeHtml(l.leadSource || '—') + '</span><span>👤 ' + escapeHtml(l.assignedName || 'Unassigned') + '</span></div>' +
         (l.clientRequirement ? '<div class="lead-card-req"><b>Requirement</b>' + escapeHtml(truncateText(l.clientRequirement, 140)) + '</div>' : '') +
         (l.lastFollowUpDecision ? '<div class="lead-card-req"><b>Last follow-up</b>' + escapeHtml(truncateText(l.lastFollowUpDecision, 160)) + '</div>' : '') +
         '<div class="lead-card-foot"><span>Next follow-up: <b>' + escapeHtml(l.nextFollowUpDate || '—') + '</b></span>' +
@@ -2578,6 +2579,7 @@
           '<td>' + escapeHtml(l.date || '—') + '</td>' +
           '<td>' + escapeHtml(l.customerName || '—') + '</td>' +
           '<td>' + phoneHtml + '</td>' +
+          '<td>' + (l.email ? '<a href="mailto:' + escapeHtml(l.email) + '" style="color:var(--primary);">' + escapeHtml(l.email) + '</a>' : '—') + '</td>' +
           '<td>' + escapeHtml(l.city || '—') + '</td>' +
           '<td><span class="text-truncate" title="' + escapeHtml(l.clientRequirement || '—') + '">' + escapeHtml(truncateText(l.clientRequirement, 30)) + '</span></td>' +
           '<td><span class="text-truncate" title="' + escapeHtml(l.detailRequirements || '—') + '">' + escapeHtml(truncateText(l.detailRequirements, 30)) + '</span></td>' +
@@ -2901,6 +2903,7 @@
       '<div class="lead-detail-section-title"><div>Customer Information</div></div>' +
       '<div class="lead-detail-field"><strong>Customer Name</strong><div class="value-text-large">' + escapeHtml(l.customerName || '—') + '</div></div>' +
       '<div class="lead-detail-field"><strong>Contact</strong><div class="value-text">' + phoneHtml + '</div></div>' +
+      '<div class="lead-detail-field"><strong>Email</strong><div class="value-text">' + (l.email ? '<a href="mailto:' + escapeHtml(l.email) + '">' + escapeHtml(l.email) + '</a>' : '—') + '</div></div>' +
       '<div class="lead-detail-field"><strong>City</strong><div class="value-text">' + escapeHtml(l.city || '—') + '</div></div>' +
       '<div class="lead-detail-field"><strong>Date</strong><div class="value-text">' + escapeHtml(l.date || '—') + '</div></div>' +
       '<div class="lead-detail-section-title"><div>Requirements</div></div>' +

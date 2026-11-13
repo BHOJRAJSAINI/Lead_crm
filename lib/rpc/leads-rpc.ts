@@ -229,7 +229,7 @@ export async function handleSaveFollowUp(req: NextRequest, args: any[]) {
     leadStatus: status, nextFollowDate: p.nextFollowDate || '', nextFollowTime: p.nextFollowTime || '',
     createdBy: s.email,
   });
-  await enqueueSheetSync('leads', p.leadId, { leadId: p.leadId, status }, 'upsert');
+  // Follow-up is stored only in the follow_ups table + the 'Lead FollowUps' sheet tab (no other sheet cells are written).
   await audit({ actorEmail: s.email, action: 'save_follow_up', entity: 'follow_ups', entityId: p.leadId, detail: { status } });
   return { success: true, message: 'Follow-up saved successfully.' };
 }

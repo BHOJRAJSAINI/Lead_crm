@@ -2590,11 +2590,11 @@
           '<td>' + phoneHtml + '</td>' +
           '<td>' + (l.email ? '<a href="mailto:' + escapeHtml(l.email) + '" style="color:var(--primary);">' + escapeHtml(l.email) + '</a>' : '—') + '</td>' +
           '<td>' + escapeHtml(l.city || '—') + '</td>' +
-          '<td><span class="text-truncate" title="' + escapeHtml(l.clientRequirement || '—') + '">' + escapeHtml(truncateText(l.clientRequirement, 30)) + '</span></td>' +
-          '<td><span class="text-truncate" title="' + escapeHtml(l.detailRequirements || '—') + '">' + escapeHtml(truncateText(l.detailRequirements, 30)) + '</span></td>' +
+          '<td class="clip-cell"><span class="clip" data-full="' + escapeHtml(l.clientRequirement || '') + '">' + escapeHtml(l.clientRequirement || '—') + '</span></td>' +
+          '<td class="clip-cell"><span class="clip" data-full="' + escapeHtml(l.detailRequirements || '') + '">' + escapeHtml(l.detailRequirements || '—') + '</span></td>' +
           '<td><span class="badge">' + escapeHtml(l.leadSource || '—') + '</span></td>' +
           '<td>' + escapeHtml(assignedDisplay) + '</td>' +
-          '<td class="wrap-cell">' + escapeHtml(l.lastFollowUpDecision || '—') + '</td>' +
+          '<td class="clip-cell"><span class="clip" data-full="' + escapeHtml(l.lastFollowUpDecision || '') + '">' + escapeHtml(l.lastFollowUpDecision || '—') + '</span></td>' +
           '<td>' + escapeHtml(l.nextFollowUpDate || '—') + '</td>' +
           '<td><span class="badge ' + statusBadgeClass + '">' + escapeHtml(statusDisplay) + '</span></td>' +
           '<td>' + (l.quotationUrl ? '<a href="' + escapeHtml(l.quotationUrl) + '" target="_blank" rel="noopener" style="color:#4f46e5;font-weight:600;text-decoration:underline;">Click Here</a>' : '—') + '</td>' +
@@ -3462,7 +3462,7 @@
         }
         if (!res.items.length) { body.innerHTML = '<tr><td colspan="6">' + emptyState('No checklist items assigned to you right now.') + '</td></tr>'; return; }
         body.innerHTML = res.items.map(function (it) {
-          return '<tr><td>' + escapeHtml(it.taskId) + '</td><td class="wrap-cell">' + escapeHtml(it.task) + '</td><td>' + escapeHtml(it.plannedTime || '—') + '</td>' +
+          return '<tr><td>' + escapeHtml(it.taskId) + '</td><td class="clip-cell"><span class="clip" data-full="' + escapeHtml(it.task || '') + '">' + escapeHtml(it.task || '—') + '</span></td><td>' + escapeHtml(it.plannedTime || '—') + '</td>' +
             '<td>' + escapeHtml(it.frequency) + '</td><td>' + escapeHtml(it.department) + '</td>' +
             '<td>' + (it.updationLink ? '<a class="link-btn" href="' + escapeHtml(it.updationLink) + '" target="_blank" rel="noopener">Click Here</a>' : '<span style="color:#9ca3af;font-size:10px;">Unavailable</span>') + '</td></tr>';
         }).join('');
@@ -3494,7 +3494,7 @@
         }
         if (!res.items.length) { body.innerHTML = '<tr><td colspan="5">' + emptyState('No tasks delegated to you right now.') + '</td></tr>'; return; }
         body.innerHTML = res.items.map(function (it) {
-          return '<tr><td>' + escapeHtml(it.taskCode) + '</td><td>' + escapeHtml(it.assignedBy) + '</td><td class="wrap-cell">' + escapeHtml(it.work) + '</td>' +
+          return '<tr><td>' + escapeHtml(it.taskCode) + '</td><td>' + escapeHtml(it.assignedBy) + '</td><td class="clip-cell"><span class="clip" data-full="' + escapeHtml(it.work || '') + '">' + escapeHtml(it.work || '—') + '</span></td>' +
             '<td>' + escapeHtml(it.deadline || '—') + '</td>' +
             '<td>' + (it.updationLink ? '<a class="link-btn" href="' + escapeHtml(it.updationLink) + '" target="_blank" rel="noopener">Click Here</a>' : '<span style="color:#9ca3af;font-size:10px;">Unavailable</span>') + '</td></tr>';
         }).join('');
@@ -4329,7 +4329,7 @@
       var el = e.target.closest && e.target.closest('.clip[data-full]');
       if (!el) return;
       var full = el.getAttribute('data-full');
-      if (!full || (el.scrollWidth <= el.clientWidth && full.length < 40)) return; // not clipped
+      if (!full || el.scrollWidth <= el.clientWidth) return; // not clipped
       cur = el; tip.textContent = full; tip.classList.add('on'); place(e);
     });
     document.addEventListener('mousemove', function (e) { if (cur) place(e); });

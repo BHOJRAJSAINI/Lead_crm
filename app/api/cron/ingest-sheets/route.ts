@@ -3,6 +3,7 @@ import { isCronAuthorized } from '@/lib/cron-auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 /** Sheets → DB ingest: reads rows newer than sheet_sync_state.last_row per source
  *  tab, normalizes, and upserts into `leads` by (source_key, lead_id). Never
@@ -384,6 +385,10 @@ export async function GET(req: NextRequest) {
   const { supabaseAdmin } = await import('@/lib/supabase');
   const sheets = await import('@/lib/sheets');
   const sb = supabaseAdmin();
+  // Overlap guard (cron now fires every 30s): skip if another run started < 25s ago.
+  const { data: lock } = await sb.from('sheet_sync_state').select('last_run').eq('key', 'ingest:lock').maybeSingle();
+  if (lock?.last_run && Date.now() - new Date(lock.last_run).getTime() < 25000) return NextResponse.json({ ok: true, skipped: 'recent run' });
+  await sb.from('sheet_sync_state').upsert({ key: 'ingest:lock', last_row: 0, last_run: new Date().toISOString() }, { onConflict: 'key' });
   const summary: any = { sources: [] };
 
   for (const src of SOURCES) {

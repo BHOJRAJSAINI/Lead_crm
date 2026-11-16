@@ -14,5 +14,12 @@ export async function enqueueSheetSync(tableName: string, rowId: string, payload
     });
   } catch (e) {
     console.error('outbox enqueue failed', e);
+    return;
   }
+  // Push to Google Sheets immediately (background) instead of waiting for the next cron tick.
+  try {
+    const { waitUntil } = await import('@vercel/functions');
+    const run = import('./outbox-drain').then((m) => m.drainOutbox(10)).catch((e) => console.error('instant drain failed', e));
+    waitUntil(run);
+  } catch (e) { /* cron will pick it up */ }
 }

@@ -730,6 +730,14 @@
       .install-banner .ib-go { background: var(--primary); color: #fff; } .install-banner .ib-x { background: transparent; color: var(--text-muted); }
     }
     @media (display-mode: standalone) { .install-banner { display: none !important; } }
+
+    /* ===== Short text + full text on hover (Follow-Up) ===== */
+    td.clip-cell { max-width: 260px; min-width: 140px; }
+    td.clip-cell .clip { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: help; max-width: 260px; }
+    html[data-listview="cards"] .view:not(#viewLead) .table-scroll td.clip-cell, html[data-listview="cards"] .view:not(#viewLead) .table-scroll td.clip-cell .clip { max-width: none; }
+    html[data-listview="cards"] .view:not(#viewLead) .table-scroll td.clip-cell .clip { white-space: normal; text-align: left; }
+    #hoverTip { position: fixed; z-index: 9000; max-width: min(460px, 88vw); background: var(--surface); color: var(--text); border: 1px solid var(--primary); border-radius: 12px; padding: 10px 12px; font-size: 12.5px; line-height: 1.5; box-shadow: var(--shadow-lg); pointer-events: none; white-space: pre-wrap; word-break: break-word; opacity: 0; transform: translateY(4px); transition: opacity .12s, transform .12s; }
+    #hoverTip.on { opacity: 1; transform: none; }
     @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
   </style>
 </head>
@@ -2828,7 +2836,7 @@
           '<td>' + disp(r.leadNo) + '</td>' +
           '<td>' + disp(r.followDate) + '</td>' +
           '<td>' + disp(r.followTime) + '</td>' +
-          '<td class="wrap-cell">' + disp(r.remark) + '</td>' +
+          '<td class="clip-cell"><span class="clip" data-full="' + escapeHtml(r.remark || '') + '">' + disp(r.remark) + '</span></td>' +
           '<td><span class="badge ' + statusBadgeClass + '">' + disp(r.leadStatus || 'New') + '</span></td>' +
           '<td>' + disp(r.nextFollowDate) + '</td>' +
           '<td>' + disp(r.nextFollowTime) + '</td>' +
@@ -4304,6 +4312,29 @@
     labelTables();
   })();
 
+
+  // ===== Hover tooltip: full text for clipped cells =====
+  (function () {
+    var tip = document.createElement('div'); tip.id = 'hoverTip'; document.body.appendChild(tip);
+    var cur = null;
+    function place(e) {
+      var pad = 14, w = tip.offsetWidth, h = tip.offsetHeight;
+      var x = e.clientX + pad, y = e.clientY + pad;
+      if (x + w > window.innerWidth - 8) x = Math.max(8, e.clientX - w - pad);
+      if (y + h > window.innerHeight - 8) y = Math.max(8, e.clientY - h - pad);
+      tip.style.left = x + 'px'; tip.style.top = y + 'px';
+    }
+    document.addEventListener('mouseover', function (e) {
+      var el = e.target.closest && e.target.closest('.clip[data-full]');
+      if (!el) return;
+      var full = el.getAttribute('data-full');
+      if (!full || (el.scrollWidth <= el.clientWidth && full.length < 40)) return; // not clipped
+      cur = el; tip.textContent = full; tip.classList.add('on'); place(e);
+    });
+    document.addEventListener('mousemove', function (e) { if (cur) place(e); });
+    document.addEventListener('mouseout', function (e) { if (cur && (!e.relatedTarget || !cur.contains(e.relatedTarget))) { tip.classList.remove('on'); cur = null; } });
+    document.addEventListener('scroll', function () { tip.classList.remove('on'); cur = null; }, true);
+  })();
 
   // ===== Mobile: collapsible filter bars =====
   (function () {

@@ -625,6 +625,7 @@
     .table-scroll table { width: 100%; min-width: 100%; }
     .table-scroll.wide table { min-width: max(100%, 1650px); }
     td.wrap-cell { max-width: none; min-width: 260px; width: 28%; }
+    td.clip-cell.wrap-cell, td.clip-cell { min-width: 110px; width: 150px; max-width: 150px; }
     .toolbar { width: 100%; }
     .toolbar input[type="text"] { flex: 1 1 220px; max-width: 420px; }
     .kpi-grid, .panel-grid { width: 100%; }
@@ -732,8 +733,8 @@
     @media (display-mode: standalone) { .install-banner { display: none !important; } }
 
     /* ===== Short text + full text on hover (Follow-Up) ===== */
-    td.clip-cell { max-width: 260px; min-width: 140px; }
-    td.clip-cell .clip { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: help; max-width: 260px; }
+    td.clip-cell { width: 150px; max-width: 150px; min-width: 110px; }
+    td.clip-cell .clip { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: help; max-width: 150px; }
     html[data-listview="cards"] .view:not(#viewLead) .table-scroll td.clip-cell, html[data-listview="cards"] .view:not(#viewLead) .table-scroll td.clip-cell .clip { max-width: none; }
     html[data-listview="cards"] .view:not(#viewLead) .table-scroll td.clip-cell .clip { white-space: normal; text-align: left; }
     #hoverTip { position: fixed; z-index: 9000; max-width: min(460px, 88vw); background: var(--surface); color: var(--text); border: 1px solid var(--primary); border-radius: 12px; padding: 10px 12px; font-size: 12.5px; line-height: 1.5; box-shadow: var(--shadow-lg); pointer-events: none; white-space: pre-wrap; word-break: break-word; opacity: 0; transform: translateY(4px); transition: opacity .12s, transform .12s; }

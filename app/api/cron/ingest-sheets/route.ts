@@ -30,12 +30,15 @@ function colIdx(letter: string): number {
 
 function fmtDate(val: any): string {
   if (val === null || val === undefined || val === '') return '';
-  if (typeof val === 'number' && val > 20000 && val < 60000) { // Sheets serial date
-    return new Date(Date.UTC(1899, 11, 30) as any).toISOString().slice(0, 0) || ''; // handled below
-  }
+  if (typeof val === 'number') return (val > 20000 && val < 60000) ? new Date(Math.round((val - 25569) * 86400 * 1000)).toISOString().slice(0, 10) : '';
   const s = String(val).trim();
+  // dd/mm/yyyy (India), dd-mm-yyyy, dd.mm.yyyy, optional time suffix
+  let m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/);
+  if (m) { const dd = +m[1], mm = +m[2]; return (mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31) ? m[3] + '-' + (mm < 10 ? '0' : '') + mm + '-' + (dd < 10 ? '0' : '') + dd : ''; }
+  m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m) return m[1] + '-' + m[2].padStart(2, '0') + '-' + m[3].padStart(2, '0');
   const d = new Date(s);
-  return isNaN(d.getTime()) ? s : d.toISOString().slice(0, 10);
+  return isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
 }
 
 

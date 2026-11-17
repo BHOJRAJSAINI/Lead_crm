@@ -33,15 +33,20 @@ export async function drainOutbox(limit = 50) {
         if (p.assignedName !== undefined) upd.push({ range: sheets.a1Cell(src.tab, src.assigned, rowNo), values: [[p.assignedName ?? '']] });
         if (p.status !== undefined) upd.push({ range: sheets.a1Cell(src.tab, src.status, rowNo), values: [[p.status ?? '']] });
         await sheets.batchUpdateValues(upd);
+      } else if (job.table_name === 'quotations') {
+        const now = new Date().toISOString();
+        await sheets.appendValues('Quotations', 'A:T', [[now, p.leadId, p.customerName, p.contactPerson, p.mobile, p.location, p.eventDate, p.days,
+          p.salesPerson, p.salesPersonMobile, JSON.stringify(p.items || []), p.total, p.gstPercent, p.gstAmount, p.grandTotal,
+          p.status, p.generatedBy, now, p.storagePath || '', p.pdfUrl || '']]);
       } else {
-        // users / quotations / checklist / delegation: not mirrored back to the sheet (sheet is their source).
+        // users / checklist / delegation / checklist / delegation: not mirrored back to the sheet (sheet is their source).
         await sb.from('sheet_sync_log').insert({ direction: 'db->sheet', table_name: job.table_name, ok: true, detail: { skipped: true } });
       }
       await sb.from('sheet_outbox').update({ status: 'done', processed_at: new Date().toISOString() }).eq('id', job.id);
       results.push({ id: job.id, ok: true });
     } catch (e: any) {
       const attempts = (job.attempts || 0) + 1;
-      const status = attempts >= 5 ? 'dead' : 'pending';
+      const status = attempts >= 10 ? 'dead' : 'pending';
       await sb.from('sheet_outbox').update({
         attempts, status, last_error: String(e?.message || e).substring(0, 500),
       }).eq('id', job.id);

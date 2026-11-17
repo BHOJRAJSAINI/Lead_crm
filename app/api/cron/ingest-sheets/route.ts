@@ -246,8 +246,61 @@ async function syncQuotations(sb: any, sheets: any) {
     if (ts) rec.created_at = ts;
     out.push(rec);
   }
-  const res = await replaceIfChanged(sb, 'quotations', out, true);
-  return { source: 'Quotations', rows: out.length, ...res };
+  // Quotations generated in the app are pushed to the sheet too: drop those sheet rows so they aren't duplicated.
+  const { data: appQ } = await sb.from('quotations').select('lead_id, customer_name, grand_total').neq('generated_by', 'sheet-import');
+  const qk = (l: any, c: any, g: any) => String(l).trim() + '|' + String(c || '').trim().toLowerCase() + '|' + Math.round(Number(g) || 0);
+  const appKeys = new Set((appQ || []).map((q: any) => qk(q.lead_id, q.customer_name, q.grand_total)));
+  const outF = out.filter((r) => !appKeys.has(qk(r.lead_id, r.customer_name, r.grand_total)));
+  const res = await replaceIfChanged(sb, 'quotations', outF, true);
+  return { source: 'Quotations', rows: outF.length, ...res };
+}
+
+/** Sheet edits to EXISTING follow-up rows (remark / status / next follow-up) -> DB, and rows missing in the DB get inserted. */
+async function refreshFollowUps(sb: any, sheets: any) {
+  const { fetchAll } = await import('@/lib/supabase');
+  const rows: any[][] = await sheets.readRange(FU_SHEET, 'A2:H200000', true);
+  if (!rows.length) return { source: 'RefreshFollowUps', skipped: 'empty read' };
+  const { data: db } = await fetchAll(() => sb.from('follow_ups').select('id, lead_id, follow_date, follow_time, remark, lead_status, next_follow_date, next_follow_time, created_at'));
+  const key = (l: any, d: any, t: any) => String(l).trim() + '|' + String(d || '') + '|' + String(t || '').slice(0, 5);
+  const byKey: Record<string, any> = {};
+  for (const f of db || []) byKey[key(f.lead_id, f.follow_date, f.follow_time)] = f;
+  const recent = Date.now() - 10 * 60000;
+  let updated = 0; const missing: any[] = [];
+  const seen = new Set<string>();
+  for (const r of rows) {
+    const leadId = String((r && r[0]) ?? '').trim();
+    if (!leadId) continue;
+    const fd = normDate(r[1]), ft = normTime(r[2]);
+    const k = key(leadId, fd, ft);
+    if (seen.has(k)) continue; seen.add(k);
+    const cur = byKey[k];
+    const remark = String(r[3] ?? '').trim(), st = String(r[4] ?? '').trim() || 'New';
+    const nd = normDate(r[5]), nt = normTime(r[6]);
+    if (!cur) {
+      if (missing.length < 200 && fd) {
+        const rec: any = { lead_id: leadId, follow_date: fd, follow_time: ft, remark, lead_status: st, next_follow_date: nd, next_follow_time: nt, created_by: 'sheet-import' };
+        const ts = normTimestamp(r[7]); if (ts) rec.created_at = ts;
+        missing.push(rec);
+      }
+      continue;
+    }
+    if (new Date(cur.created_at).getTime() > recent) continue; // fresh app write: sheet may not have caught up
+    const diff: any = {};
+    if ((cur.remark || '') !== remark) diff.remark = remark;
+    if ((cur.lead_status || '') !== st) diff.lead_status = st;
+    if ((cur.next_follow_date || '') !== nd) diff.next_follow_date = nd;
+    if (String(cur.next_follow_time || '').slice(0, 5) !== nt) diff.next_follow_time = nt;
+    if (Object.keys(diff).length && updated < 300) {
+      const { error } = await sb.from('follow_ups').update(diff).eq('id', cur.id);
+      if (!error) updated++;
+    }
+  }
+  let inserted = 0;
+  for (let i = 0; i < missing.length; i += 100) {
+    const { error } = await sb.from('follow_ups').insert(missing.slice(i, i + 100));
+    if (!error) inserted += Math.min(100, missing.length - i);
+  }
+  return { source: 'RefreshFollowUps', scanned: rows.length, updated, inserted };
 }
 
 /** Sheet edits to EXISTING leads (assigned name, status, customer/contact/city/requirement text) -> DB.
@@ -455,7 +508,7 @@ export async function GET(req: NextRequest) {
     await sb.from('sheet_sync_log').insert({ direction: 'sheet->db', table_name: FU_SHEET, ok: false, error: String(e?.message || e).substring(0, 500) });
     summary.sources.push({ source: FU_SHEET, error: String(e?.message || e) });
   }
-  for (const fn of [removeDeleted, refreshExistingLeads, syncChecklist, syncDelegation, syncQuotations]) {
+  for (const fn of [removeDeleted, refreshExistingLeads, refreshFollowUps, syncChecklist, syncDelegation, syncQuotations]) {
     try { summary.sources.push(await fn(sb, sheets)); }
     catch (e: any) { summary.sources.push({ source: fn.name, error: String(e?.message || e).slice(0, 300) }); }
   }

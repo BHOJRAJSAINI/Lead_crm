@@ -4,6 +4,7 @@ import { requireSession, AUTH_EXPIRED } from '../auth';
 import { getConfig, audit } from '../config';
 import { ENV } from '../env';
 import { buildQuotationPdf } from '../quotation-pdf';
+import { enqueueSheetSync } from '../outbox';
 
 /**
  * Server-side quotation PDF via pdf-lib (6 columns S.NO/PARTICULARS/SIZE/QTY/RATE/AMOUNT,
@@ -92,9 +93,21 @@ export async function handleGenerateQuotation(req: NextRequest, args: any[]) {
     });
     // follow-up auto-saved as Hot Lead (same as GAS flow)
     const today = new Date().toISOString().slice(0, 10);
+    const fuTime = new Date().toTimeString().slice(0, 5);
     await sb.from('follow_ups').insert({
-      lead_id: leadId, follow_date: today, follow_time: new Date().toTimeString().slice(0, 5),
+      lead_id: leadId, follow_date: today, follow_time: fuTime,
       remark: 'Quotation generated', lead_status: 'Hot Lead', created_by: s.email,
+    });
+    // Mirror to Google Sheets: follow-up -> 'Lead FollowUps', quotation -> 'Quotations'.
+    await enqueueSheetSync('follow_ups', leadId + ':' + today + ':' + fuTime, {
+      leadId, followDate: today, followTime: fuTime, remark: 'Quotation generated', leadStatus: 'Hot Lead',
+      nextFollowDate: '', nextFollowTime: '', createdBy: s.email,
+    });
+    await enqueueSheetSync('quotations', leadId + ':' + storagePath, {
+      leadId, customerName: p.customerName || '', contactPerson: p.contactPerson || '', mobile: p.mobile || '',
+      location: p.location || '', eventDate: p.eventDate || '', days: p.days || '',
+      salesPerson: p.salesPerson || '', salesPersonMobile: p.salesPersonMobile || '',
+      items, total, gstPercent, gstAmount, grandTotal, status: 'Hot Lead', generatedBy: s.email, storagePath, pdfUrl,
     });
     await audit({ actorEmail: s.email, action: 'generate_quotation', entity: 'quotations', entityId: leadId });
     return { success: true, message: 'Quotation generated successfully.', pdfUrl, pdfId: storagePath, fileName, total, gstPercent, gstAmount, grandTotal };

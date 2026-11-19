@@ -6,3 +6,5 @@ node_modules
 .vercel
 *.tsbuildinfo
 panache-lead-crm.zip
+.open-next
+.wrangler

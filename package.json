@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "import-from-sheets": "tsx scripts/import-from-sheets.ts"
+    "import-from-sheets": "tsx scripts/import-from-sheets.ts",
+    "cf:build": "opennextjs-cloudflare build",
+    "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
@@ -21,10 +24,12 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.14.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.14.0",
     "@types/react": "^18.3.3",
     "tsx": "^4.16.0",
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "wrangler": "^4.165.0"
   }
 }

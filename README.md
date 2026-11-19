@@ -92,3 +92,9 @@ Keep the old Apps Script web app live **read-only** for 14 days. If rollback is
 needed, redeploy the previous Apps Script deployment; data written to Postgres
 after cutover can be exported with `import-from-sheets` in reverse or via the
 Sheets mirror.
+
+## Two-way Google Sheets sync
+- **Sheet → App**: `/api/cron/ingest-sheets` (pg_cron, every 2 min): new leads (Leads / FB & INSTA / Corp FB), edits to existing leads, deletes, Lead FollowUps (new + edited rows), Checklist, Delegation, Quotations.
+- **App → Sheet**: every write goes to `sheet_outbox` and is pushed immediately (`lib/outbox.ts` → `lib/outbox-drain.ts`); `/api/cron/sync-sheets` retries failures. Follow-ups → `Lead FollowUps`, status/assigned → source tab cell, quotations → `Quotations`.
+- Migrations: `supabase/migrations/0000`–`0005`. Env vars: see `.env.example`.
+- Vercel Hobby has usage limits; very frequent crons (30 s) exhausted it once — keep ≥ 2 min or use Pro.
